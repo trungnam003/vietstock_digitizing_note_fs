@@ -1,0 +1,49 @@
+﻿<Window x:Class="DigitizingNoteFs.Wpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:DigitizingNoteFs.Wpf"
+        mc:Ignorable="d"
+        Title="Vietstock" WindowState="Maximized" Width="1280" Height="720">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Row 1 sẽ co giãn theo nội dung -->
+            <RowDefinition Height="*"/>
+            <!-- Row 2 sẽ co giãn để lấp đầy phần còn lại của Grid -->
+        </Grid.RowDefinitions>
+
+        <!-- Row 1 -->
+        <StackPanel  Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Height="32">
+            <TextBox x:Name="FilePathTextBox" MinWidth="300" Margin="5" IsReadOnly="True"/>
+            <Button Content="Chọn File" Click="BrowseButton_Click" Width="100" Margin="5" Name="btnBrowseFile"/>
+            <ComboBox  Width="76" Margin="5"/>
+        </StackPanel>
+        <!-- Row 2 -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <!-- Cột 1: Chiếm 50% chiều rộng của Grid -->
+                <ColumnDefinition Width="Auto"/>
+                <!-- Cột 2: Kích thước tự điều chỉnh -->
+                <ColumnDefinition Width="*"/>
+                <!-- Cột 3: Chiếm 50% chiều rộng của Grid -->
+            </Grid.ColumnDefinitions>
+
+            <!-- Cột 1 -->
+            <Border BorderBrush="Black" BorderThickness="1" Grid.Column="0">
+                <TextBlock Text="Column 1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+
+            <!-- Grid Splitter -->
+            <GridSplitter Grid.Column="1" Width="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ResizeBehavior="PreviousAndNext" />
+
+            <!-- Cột 2 -->
+            <Border BorderBrush="Black" BorderThickness="1" Grid.Column="2" >
+                <TextBlock Text="Column 2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+        </Grid>
+    </Grid>
+
+</Window>
