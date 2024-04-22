@@ -1,5 +1,4 @@
-﻿using DigitizingNoteFs.Domain.IServices;
-using DigitizingNoteFs.Infrastructure.Services;
+﻿using DigitizingNoteFs.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System.Windows;
 
@@ -31,7 +30,7 @@ namespace DigitizingNoteFs.Wpf
         private static void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<MainWindow>();
-            services.AddTransient<ITestService, TestService>();
+            services.AddTransient<ExcelService>();
         }
     }
 }

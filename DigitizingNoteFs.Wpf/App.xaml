@@ -2,8 +2,9 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:DigitizingNoteFs.Wpf"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
              Startup="OnStartupApplication">
     <Application.Resources>
-         
+       
     </Application.Resources>
 </Application>
