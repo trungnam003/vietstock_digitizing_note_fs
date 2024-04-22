@@ -52,7 +52,7 @@ namespace DigitizingNoteFs.Wpf
         private void cbbFsSheets_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var selected = cbbFsSheets.SelectedValue;
-            _viewModel.SelectedSheet = selected.ToString();
+            
         }
     }
 

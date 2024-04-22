@@ -50,15 +50,15 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             }
         }
 
-        private string _selectedSheet;
-        public string SelectedSheet
+        private ComboBoxPairs _selectedSheet;
+        public ComboBoxPairs SelectedSheet
         {
             get { return _selectedSheet; }
             set
             {
 
                 _selectedSheet = value;
-                LoadDataFromSheet(_selectedSheet);
+                LoadDataFromSheet(_selectedSheet.Value);
                 OnPropertyChanged("SelectedSheet");
             }
         }

@@ -26,8 +26,8 @@
             <TextBox x:Name="FilePathTextBox" MinWidth="300" Margin="5" IsReadOnly="True" Text="{Binding FilePath}"/>
             <Button Content="Chọn File" Command="{Binding OpenFileCommand}" Width="100" Margin="5" Name="btnBrowseFile"/>
             <ComboBox Width="76" Margin="5" Name="cbbFsSheets" 
-                      ItemsSource="{Binding SheetNames}" 
-                      SelectionChanged="cbbFsSheets_SelectionChanged"
+                      ItemsSource="{Binding Path=SheetNames}" 
+                      SelectedItem="{Binding Path=SelectedSheet}"
                       DisplayMemberPath="Value" 
                       SelectedValuePath="Key">
             </ComboBox>
