@@ -46,16 +46,13 @@ namespace DigitizingNoteFs.Wpf
                 BindingCombobox();
                 var selected = cbbFsSheets.SelectedValue;
                 var fsModel = _excelService.ReadImportFsExcelFile(selectedFileName, sheetName: selected.ToString() ?? throw new ArgumentNullException());
-                _viewModel.SheetModel = fsModel;
-
             }
         }
 
         private void cbbFsSheets_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var selected = cbbFsSheets.SelectedValue;
-            var fsModel = _excelService.ReadImportFsExcelFile(FilePathTextBox.Text, sheetName: selected.ToString() ?? throw new ArgumentNullException());
-            _viewModel.SheetModel = fsModel;
+            _viewModel.SelectedSheet = selected.ToString();
         }
     }
 

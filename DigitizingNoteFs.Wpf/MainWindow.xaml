@@ -23,19 +23,24 @@
 
         <!-- Row 1 -->
         <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Height="32">
-            <TextBox x:Name="FilePathTextBox" MinWidth="300" Margin="5" IsReadOnly="True"/>
-            <Button Content="Chọn File" Click="BrowseButton_Click" Width="100" Margin="5" Name="btnBrowseFile"/>
-            <ComboBox Width="76" Margin="5" Name="cbbFsSheets" SelectionChanged="cbbFsSheets_SelectionChanged">
+            <TextBox x:Name="FilePathTextBox" MinWidth="300" Margin="5" IsReadOnly="True" Text="{Binding FilePath}"/>
+            <Button Content="Chọn File" Command="{Binding OpenFileCommand}" Width="100" Margin="5" Name="btnBrowseFile"/>
+            <ComboBox Width="76" Margin="5" Name="cbbFsSheets" 
+                      ItemsSource="{Binding SheetNames}" 
+                      SelectionChanged="cbbFsSheets_SelectionChanged"
+                      DisplayMemberPath="Value" 
+                      SelectedValuePath="Key">
             </ComboBox>
             <Rectangle HorizontalAlignment="Stretch" Fill="DarkGray" Width="1" Margin="2 5"/>
             <StackPanel Orientation="Horizontal">
                 <Label VerticalAlignment="Center">Thông tin: </Label>
-                <TextBlock Text="{Binding SheetModel.StockCode}" VerticalAlignment="Center"></TextBlock>
-                <TextBlock Text="{Binding SheetModel.Year}" VerticalAlignment="Center"></TextBlock>
-                <TextBlock Text="{Binding SheetModel.ReportTerm}" VerticalAlignment="Center"></TextBlock>
-                <TextBlock Text="{Binding SheetModel.ReportType}" VerticalAlignment="Center"></TextBlock>
-                <TextBlock Text="{Binding SheetModel.AuditedStatus}" VerticalAlignment="Center"></TextBlock>
-                <TextBlock Text="{Binding SheetModel.IsAdjusted}" VerticalAlignment="Center"></TextBlock>
+                <TextBlock Text="{Binding SheetModel.StockCode}" VerticalAlignment="Center" Margin="5"></TextBlock>
+                <TextBlock Text="{Binding SheetModel.Year}" VerticalAlignment="Center" Margin="5"></TextBlock>
+                <TextBlock Text="{Binding SheetModel.ReportTerm}" VerticalAlignment="Center" Margin="5"></TextBlock>
+                <TextBlock Text="{Binding SheetModel.ReportType}" VerticalAlignment="Center" Margin="5"></TextBlock>
+                <TextBlock Text="{Binding SheetModel.AuditedStatus}" VerticalAlignment="Center" Margin="5"></TextBlock>
+                <TextBlock Text="{Binding SheetModel.IsAdjusted}" VerticalAlignment="Center" Margin="5"></TextBlock>
+                
             </StackPanel>
         </StackPanel>
         <!-- Row 2 -->

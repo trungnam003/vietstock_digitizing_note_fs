@@ -14,40 +14,68 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
-    public class RelayCommand<T> : ICommand
+    //public class RelayCommand<T> : ICommand
+    //{
+    //    private readonly Predicate<T> _canExecute;
+    //    private readonly Action<T> _execute;
+
+    //    public RelayCommand(Predicate<T> canExecute, Action<T> execute)
+    //    {
+    //        _canExecute = canExecute;
+    //        _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+    //    }
+
+    //    public bool CanExecute(object? parameter)
+    //    {
+    //        ArgumentNullException.ThrowIfNull(parameter);
+    //        try
+    //        {
+    //            return _canExecute == null || _canExecute((T)parameter);
+    //        }
+    //        catch
+    //        {
+    //            return true;
+    //        }
+    //    }
+
+    //    public void Execute(object? parameter)
+    //    {
+    //        ArgumentNullException.ThrowIfNull(parameter);
+    //        _execute(obj: (T)parameter);
+    //    }
+
+    //    public event EventHandler? CanExecuteChanged
+    //    {
+    //        add { CommandManager.RequerySuggested += value; }
+    //        remove { CommandManager.RequerySuggested -= value; }
+    //    }
+    //}
+
+    public class RelayCommand : ICommand
     {
-        private readonly Predicate<T> _canExecute;
-        private readonly Action<T> _execute;
+        private readonly System.Action<object> _execute;
+        private readonly System.Func<bool> _canExecute;
 
-        public RelayCommand(Predicate<T> canExecute, Action<T> execute)
+        public RelayCommand(System.Action<object> execute, System.Func<bool> canExecute = null)
         {
+            _execute = execute;
             _canExecute = canExecute;
-            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
         }
 
-        public bool CanExecute(object? parameter)
-        {
-            ArgumentNullException.ThrowIfNull(parameter);
-            try
-            {
-                return _canExecute == null || _canExecute((T)parameter);
-            }
-            catch
-            {
-                return true;
-            }
-        }
-
-        public void Execute(object? parameter)
-        {
-            ArgumentNullException.ThrowIfNull(parameter);
-            _execute(obj: (T)parameter);
-        }
-
-        public event EventHandler? CanExecuteChanged
+        public event EventHandler CanExecuteChanged
         {
             add { CommandManager.RequerySuggested += value; }
             remove { CommandManager.RequerySuggested -= value; }
+        }
+
+        public bool CanExecute(object parameter)
+        {
+            return _canExecute == null || _canExecute();
+        }
+
+        public void Execute(object parameter)
+        {
+            _execute(parameter);
         }
     }
 }
