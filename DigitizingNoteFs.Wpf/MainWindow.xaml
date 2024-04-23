@@ -7,7 +7,9 @@
         xmlns:sys="clr-namespace:System;assembly=System.Runtime" 
         d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}"
         mc:Ignorable="d"
-        Title="Vietstock" WindowState="Maximized" Width="1280" Height="720">
+        Title="Vietstock" WindowState="Maximized" Width="1280" Height="720"
+        Background="#d1dff6"
+        >
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -46,22 +48,35 @@
         <!-- Row 2 -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="40*"/>
                 <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="60*"/>
             </Grid.ColumnDefinitions>
 
             <!-- Cột 1 -->
-            <Border BorderBrush="Black" BorderThickness="1" Grid.Column="0">
-                <DataGrid Name="dgDataFsSheet"/>
+            <Border BorderBrush="#92b6f0" BorderThickness="1" Grid.Column="0">
+                <DataGrid Name="dgDataFsSheet" ItemsSource="{Binding ParentNoteData}" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" Margin="5"> 
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="NoteID" Binding="{Binding FsNoteId}"/>
+                        <DataGridTextColumn Header="Name" Binding="{Binding Name}"/>
+                        <DataGridTextColumn Header="Value" Binding="{Binding Value, Converter={StaticResource DoubleToStringConverter}}" />
+                    </DataGrid.Columns>
+                </DataGrid>
             </Border>
 
             <!-- Grid Splitter -->
             <GridSplitter Grid.Column="1" Width="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ResizeBehavior="PreviousAndNext" />
 
             <!-- Cột 2 -->
-            <Border BorderBrush="Black" BorderThickness="1" Grid.Column="2" >
-                <TextBlock Text="Column 2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <Border BorderBrush="#92b6f0" BorderThickness="1" Grid.Column="2" >
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition></RowDefinition>
+                        <RowDefinition></RowDefinition>
+                    </Grid.RowDefinitions>
+                    <TextBox Grid.Row="0" Margin="5" BorderBrush="#92b6f0">
+                    </TextBox>
+                </Grid>
             </Border>
         </Grid>
     </Grid>

@@ -1,4 +1,6 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:converter="clr-namespace:DigitizingNoteFs.Wpf.DataConverter"
+                    
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=System.Runtime">
     <x:Array x:Key="FsSheets" Type="sys:String">
         <sys:String>TM1</sys:String>
@@ -10,5 +12,6 @@
     </x:Array>
 
     <sys:String x:Key="KeywordSheet">Keyword</sys:String>
-    
+
+    <converter:DoubleToStringConverter x:Key="DoubleToStringConverter"/>
 </ResourceDictionary>
