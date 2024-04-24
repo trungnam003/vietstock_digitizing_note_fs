@@ -1,8 +1,5 @@
-﻿
-using DigitizingNoteFs.Core.Common;
-using DigitizingNoteFs.Core.Services;
+﻿using DigitizingNoteFs.Core.Models;
 using DigitizingNoteFs.Wpf.ViewModels;
-using Microsoft.Win32;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -20,10 +17,12 @@ namespace DigitizingNoteFs.Wpf
             this.DataContext = _viewModel;
         }
 
-        private void cbbFsSheets_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void DataGridRow_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            var selected = cbbFsSheets.SelectedValue;
-            
+            if (sender is DataGridRow row)
+            {
+                var note = row.Item as FsNoteModel;
+            }
         }
     }
 

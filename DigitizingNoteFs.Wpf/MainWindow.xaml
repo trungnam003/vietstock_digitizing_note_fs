@@ -55,7 +55,18 @@
 
             <!-- Cột 1 -->
             <Border BorderBrush="#92b6f0" BorderThickness="1" Grid.Column="0">
-                <DataGrid Name="dgDataFsSheet" ItemsSource="{Binding ParentNoteData}" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" Margin="5"> 
+                <DataGrid Name="dgDataFsSheet" ItemsSource="{Binding ParentNoteData}" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" Margin="5">
+                    <DataGrid.ColumnHeaderStyle>
+                        <Style TargetType="{x:Type DataGridColumnHeader}">
+                            <Setter Property="FontWeight" Value="Bold"/>
+                        </Style>
+                    </DataGrid.ColumnHeaderStyle>
+                    <DataGrid.ItemContainerStyle>
+                        <Style TargetType="{x:Type DataGridRow}">
+                            <EventSetter Event="MouseDoubleClick" Handler="DataGridRow_MouseDoubleClick"/>
+                            <Setter Property="FontSize" Value="14"/>
+                        </Style>
+                    </DataGrid.ItemContainerStyle>
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="NoteID" Binding="{Binding FsNoteId}"/>
                         <DataGridTextColumn Header="Name" Binding="{Binding Name}"/>
@@ -74,8 +85,20 @@
                         <RowDefinition></RowDefinition>
                         <RowDefinition></RowDefinition>
                     </Grid.RowDefinitions>
-                    <TextBox Grid.Row="0" Margin="5" BorderBrush="#92b6f0">
-                    </TextBox>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"></ColumnDefinition>
+                            <ColumnDefinition Width="3*"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="1" FontWeight="Medium" FontSize="16" Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"  Name="txtInput" Grid.Row="0" Margin="5" BorderBrush="#92b6f0" AcceptsTab="True" AcceptsReturn="True" TextWrapping="Wrap">
+                        </TextBox>
+                        <StackPanel Grid.Column="2" Orientation="Vertical">
+                            <Button Command="{Binding PasteTextCommand}" Content="Dán" Width="60" Height="40" Margin="5" Cursor="Hand"></Button>
+                            <Button Command="{Binding OpenAbbyyScreenShotCommand}" Content="Quét" Width="60" Height="40" Margin="5" Cursor="Hand"/>
+                        </StackPanel>
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>

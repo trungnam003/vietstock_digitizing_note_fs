@@ -1,12 +1,14 @@
-﻿using System.Diagnostics;
+﻿using DigitizingNoteFs.Shared.Utilities;
 
-namespace DigitizingNoteFs.Console
+namespace DigitizingNoteFs.XConsole
 {
     internal class Program
     {
-        static void Main(string[] args)
+   
+
+        static void Main()
         {
-            Debug.WriteLine("Hello, World!");
+
         }
     }
 }

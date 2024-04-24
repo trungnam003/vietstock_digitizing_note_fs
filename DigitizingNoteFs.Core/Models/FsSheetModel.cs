@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace DigitizingNoteFs.Core.Models
+﻿namespace DigitizingNoteFs.Core.Models
 {
     public class FsSheetModel
     {

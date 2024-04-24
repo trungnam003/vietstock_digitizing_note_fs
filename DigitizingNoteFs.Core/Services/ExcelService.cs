@@ -15,7 +15,7 @@ namespace DigitizingNoteFs.Core.Services
             {
                 return null;
             }
-            
+
             using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read);
             var workbook = WorkbookFactory.Create(fs);
 
@@ -36,7 +36,7 @@ namespace DigitizingNoteFs.Core.Services
             fsSheetModel.IsAdjusted = sheet.GetRow(8).GetCell(FCol).StringCellValue;
 
             return fsSheetModel;
-            
+
         }
     }
 }

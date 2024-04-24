@@ -10,10 +10,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="System.Management" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DigitizingNoteFs.Core\DigitizingNoteFs.Core.csproj" />
+    <ProjectReference Include="..\DigitizingNoteFs.Shared\DigitizingNoteFs.Shared.csproj" />
   </ItemGroup>
 
 </Project>

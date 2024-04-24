@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
-namespace DigitizingNoteFs.Core.Utilities
+namespace DigitizingNoteFs.Shared.Utilities
 {
     public static partial class StringUtils
     {
+        public const string MoneyStringPattern = @"\b(\d{1,3}(?:[.,]\d{3})*(?:(?:[.,]\d{1,3})|\b))\b|\((\d{1,3}(?:[.,]\d{3})*(?:(?:[.,]\d{1,3})|\b))\)";
         public static string RemoveSign4VietnameseString(this string s)
         {
             Regex regex = IsCombiningDiacriticalMarksRegex();
@@ -25,5 +22,19 @@ namespace DigitizingNoteFs.Core.Utilities
         private static partial Regex IsCombiningDiacriticalMarksRegex();
         [GeneratedRegex("[^a-zA-Z0-9_.\\s]+", RegexOptions.Compiled)]
         private static partial Regex NormalCharacterRegex();
+
+
+        public static List<List<string>> ConvertToMatrix(string data)
+        {
+            string[] lines = data.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+            List<List<string>> matrix = [];
+
+            foreach (var line in lines)
+            {
+                List<string> row = new(line.Split(new[] { '\t' }, StringSplitOptions.RemoveEmptyEntries));
+                matrix.Add(row);
+            }
+            return matrix;
+        }
     }
 }
