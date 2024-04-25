@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using DigitizingNoteFs.Core.Common;
 using DigitizingNoteFs.Core.Models;
 using DigitizingNoteFs.Shared.Utilities;
+using DigitizingNoteFs.Wpf.Services;
 using Microsoft.Win32;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
@@ -13,13 +14,26 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
+using Match = System.Text.RegularExpressions.Match;
 
 namespace DigitizingNoteFs.Wpf.ViewModels
 {
     internal partial class MainWindowViewModel : ObservableObject
     {
         #region Observable Properties
+        private bool _isLoading;
+        public bool IsLoading
+        {
+            get { return _isLoading; }
+            set
+            {
+                SetProperty(ref _isLoading, value);
+            }
+        }
         private string _filePath;
+        /// <summary>
+        /// Đường dẫn file excel TMBCTC
+        /// </summary>
         public string FilePath
         {
             get { return _filePath; }
@@ -30,6 +44,9 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         }
 
         private FsSheetModel? _fsSheet;
+        /// <summary>
+        /// Danh sách sheet TM trong file excel
+        /// </summary>
         public FsSheetModel? SheetModel
         {
             get => _fsSheet;
@@ -40,6 +57,9 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         }
 
         private ObservableCollection<FsNoteModel> _data;
+        /// <summary>
+        /// Dữ liệu TM trong sheet được chọn từ combobox
+        /// </summary>
         public ObservableCollection<FsNoteModel> Data
         {
             get { return _data; }
@@ -50,6 +70,9 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         }
 
         private ComboBoxPairs _selectedSheet;
+        /// <summary>
+        /// Sheet được chọn từ combobox
+        /// </summary>
         public ComboBoxPairs SelectedSheet
         {
             get { return _selectedSheet; }
@@ -61,6 +84,9 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         }
 
         private ObservableGroupedCollection<int, FsNoteModel> _groupedData;
+        /// <summary>
+        /// Danh sách ID chỉ tiêu TM cha chứa TM con
+        /// </summary>
         public ObservableGroupedCollection<int, FsNoteModel> GroupedData
         {
             get { return _groupedData; }
@@ -71,6 +97,9 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         }
 
         private ObservableCollection<FsNoteModel> _parentNoteData;
+        /// <summary>
+        /// Danh sách chỉ tiêu TM cha và dữ liệu
+        /// </summary>
         public ObservableCollection<FsNoteModel> ParentNoteData
         {
             get { return _parentNoteData; }
@@ -104,8 +133,10 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         #region Commands
         public IRelayCommand OpenFileCommand { get; }
         public IRelayCommand PasteTextCommand { get; }
-        public IRelayCommand ClearTextCommand { get; }
         public IRelayCommand OpenAbbyyScreenShotCommand { get; }
+        #endregion
+
+        #region Services
         #endregion
 
         #region Constructors
@@ -115,7 +146,6 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             Data = new ObservableCollection<FsNoteModel>();
             OpenFileCommand = new RelayCommand(OpenFile);
             PasteTextCommand = new RelayCommand(GetDataFromClipboard);
-            ClearTextCommand = new RelayCommand(ClearText);
             OpenAbbyyScreenShotCommand = new RelayCommand<object>(OpenAbbyyScreenShot);
             GroupedData = new();
             ParentNoteData = new();
@@ -139,11 +169,6 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             }
         }
 
-        private void ClearText()
-        {
-            InputText = string.Empty;
-        }
-
         private void GetDataFromClipboard()
         {
             var clipboardText = Clipboard.GetText();
@@ -153,7 +178,10 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             }
             InputText = clipboardText;
         }
-
+        /// <summary>
+        /// Đọc dữ liệu từ sheet TM được chọn và gán data vào các thuộc tính
+        /// </summary>
+        /// <param name="sheetName"></param>
         private void LoadDataFromSheet(string sheetName)
         {
             if (string.IsNullOrEmpty(sheetName))
@@ -272,8 +300,8 @@ namespace DigitizingNoteFs.Wpf.ViewModels
 
                 if (openFileDialog.ShowDialog() == true)
                 {
+                    IsLoading = true;
                     FilePath = openFileDialog.FileName;
-
                     using var file = new FileStream(FilePath, FileMode.Open, FileAccess.Read);
                     _workbook = new HSSFWorkbook(file);
                     LoadSheetNames();
@@ -288,6 +316,10 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
+            }
+            finally
+            {
+                IsLoading = false;
             }
         }
 
@@ -314,6 +346,9 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             }
         }
 
+        /// <summary>
+        /// Đọc dữ liệu từ sheet Mapping
+        /// </summary>
         private void LoadMappingData()
         {
             Mapping.Clear();
@@ -387,68 +422,124 @@ namespace DigitizingNoteFs.Wpf.ViewModels
 
         private void DebounceTimerCallback(object? state)
         {
-
-            Application.Current.Dispatcher.Invoke(() =>
+            Application.Current.Dispatcher.Invoke(async () =>
             {
                 var result = StringUtils.ConvertToMatrix(InputText);
-                HandleData(result);
+                await HandleData(result);
             });
 
         }
-
-        private void HandleData(List<List<string>> data)
+        /// <summary>
+        /// Xử lý dữ liệu input từ clipboard
+        /// </summary>
+        /// <param name="data"></param>
+        private async Task HandleData(List<List<string>> data)
         {
             var moneyList = new List<MoneyCell>();
+            var textList = new List<TextCell>();
             var sum = 0L;
             var max = long.MinValue;
-            int iRow = 0, iCol = 0;   
+            int iRow = 0, iCol = 0;
             data.ForEach(row =>
             {
                 row.ForEach(cell =>
                 {
                     var text = cell;
-                    var regexMoney = StringUtils.MoneyStringPattern;
-                    var matches = Regex.Matches(text, regexMoney);
-                    foreach (Match match in matches.Cast<Match>())
+
+                    // Lấy dữ liệu tiền từ ô trong ma trận và xóa dữ liệu tiền khỏi ô
+                    GetMoneyAndDeleteFromCell(iRow, iCol, ref sum, ref max, ref moneyList, ref text);
+
+                    text = text.RemoveSign4VietnameseString().RemoveSpecialCharacters();
+
+                    if (!string.IsNullOrWhiteSpace(text))
                     {
-                        var rawMoney = match.Value.Replace(",", string.Empty).Replace(".", string.Empty);
-
-                        if (rawMoney.StartsWith("(") && rawMoney.EndsWith(")"))
-                        {
-                            rawMoney = string.Concat("-", rawMoney.AsSpan(1, rawMoney.Length - 2));
-                        }
-
-                        var money = long.Parse(rawMoney);
-
-                        if (money < 1000 && money > -1000)
-                        {
-                            continue;
-                        }
-                        var moneyModel = new MoneyCell
+                        var textModel = new TextCell
                         {
                             Row = iRow,
                             Col = iCol,
-                            Value = money
+                            Value = text
                         };
-                        moneyList.Add(moneyModel);
-                        sum += money;
-                        max = Math.Max(max, money);
+                        textList.Add(textModel);
                     }
                     iCol++;
                 });
                 iRow++;
                 iCol = 0;
             });
-            SuggestParentNote(sum, max);
+            var suggestModel = new SuggestModel
+            {
+                Sum = sum,
+                Max = max,
+                TextCells = textList,
+                MoneyCells = moneyList
+            };
+            await GetParentNoteSuggestions(suggestModel);
+        }
+        /// <summary>
+        /// Lấy dữ liệu tiền từ ô trong ma trận và xóa dữ liệu tiền khỏi ô
+        /// </summary>
+        /// <param name="iRow"></param>
+        /// <param name="iCol"></param>
+        /// <param name="sum"></param>
+        /// <param name="max"></param>
+        /// <param name="moneyList"></param>
+        /// <param name="text"></param>
+        private static void GetMoneyAndDeleteFromCell(int iRow, int iCol, ref long sum, ref long max, ref List<MoneyCell> moneyList, ref string text)
+        {
+            var regexMoney = StringUtils.MoneyStringPattern;
+            var matches = Regex.Matches(text, regexMoney);
+            foreach (Match match in matches.Cast<Match>())
+            {
+                var rawMoney = match.Value.Replace(",", string.Empty).Replace(".", string.Empty);
+
+                if (rawMoney.StartsWith("(") && rawMoney.EndsWith(")"))
+                {
+                    rawMoney = string.Concat("-", rawMoney.AsSpan(1, rawMoney.Length - 2));
+                }
+                var money = long.Parse(rawMoney);
+
+                if (money < 1000 && money > -1000)
+                {
+                    continue;
+                }
+                var moneyModel = new MoneyCell
+                {
+                    Row = iRow,
+                    Col = iCol,
+                    Value = money
+                };
+                moneyList.Add(moneyModel);
+                sum += money;
+                max = Math.Max(max, money);
+                text = text.Replace(match.Value, string.Empty);
+            }
         }
 
-        private void SuggestParentNote(long sum, long max)
+        private async Task GetParentNoteSuggestions(SuggestModel suggestModel)
         {
-            // Nếu đúng thì người dùng có quét tổng, nếu sai thì không quét tổng
-            var debug = sum - max == max;
-            var parentNote = ParentNoteData.FirstOrDefault(x => x.Value == max);
+            var services = new SuggestServices();
+
+            services.InitSuggest(GroupedData, Data, ParentNoteData, Mapping);
+
+            var parentSuggest1 = services.SuggestParentNoteByTotal(suggestModel);
+            var parentSuggest2 = services.SuggestParentNoteByClosestNumber(suggestModel);
+            FsNoteModel? parentSuggest3 = services.SuggestParentNoteByChildren(suggestModel);
+            //if (parentSuggest1 == null && parentSuggest2 == null)
+            //{
+            //    parentSuggest3 =  await services.SuggestParentNoteByChildren(suggestModel);
+            //}
+            if(parentSuggest3 == null)
+            {
+                return;
+            }
         }
         #endregion
     }
-
+    public class SuggestModel
+    {
+        public long Sum { get; set; }
+        public long Max { get; set; }
+        public List<TextCell>? TextCells { get; set; }
+        public List<MoneyCell>? MoneyCells { get; set; }
+    }
 }

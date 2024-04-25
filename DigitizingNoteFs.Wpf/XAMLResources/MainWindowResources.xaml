@@ -14,4 +14,5 @@
     <sys:String x:Key="KeywordSheet">Keyword</sys:String>
 
     <converter:DoubleToStringConverter x:Key="DoubleToStringConverter"/>
+    <converter:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
 </ResourceDictionary>

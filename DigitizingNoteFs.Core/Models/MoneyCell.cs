@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace DigitizingNoteFs.Core.Models
+﻿namespace DigitizingNoteFs.Core.Models
 {
     public class MatrixCell
     {
@@ -15,6 +9,11 @@ namespace DigitizingNoteFs.Core.Models
     {
         public long Value { get; set; }
         public FsNoteCell? Note { get; set; }
+    }
+
+    public class TextCell : MatrixCell
+    {
+        public string? Value { get; set; }
     }
 
     public class FsNoteCell : MatrixCell

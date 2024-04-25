@@ -20,11 +20,12 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-
+        <ProgressBar Height="3" Grid.Row="0" IsIndeterminate="{Binding IsLoading}" Background="#d1dff6" BorderBrush="#92b6f0" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
         <!-- Row 1 -->
-        <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Height="32">
+        <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Height="32">
             <TextBox x:Name="FilePathTextBox" MinWidth="300" Margin="5" IsReadOnly="True" Text="{Binding FilePath}"/>
             <Button Content="Chọn File" Command="{Binding OpenFileCommand}" Width="100" Margin="5" Name="btnBrowseFile"/>
             <ComboBox Width="76" Margin="5" Name="cbbFsSheets" 
@@ -46,11 +47,11 @@
             </StackPanel>
         </StackPanel>
         <!-- Row 2 -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="40*"/>
+                <ColumnDefinition Width="4*"/>
                 <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="60*"/>
+                <ColumnDefinition Width="6*"/>
             </Grid.ColumnDefinitions>
 
             <!-- Cột 1 -->
@@ -69,8 +70,10 @@
                     </DataGrid.ItemContainerStyle>
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="NoteID" Binding="{Binding FsNoteId}"/>
-                        <DataGridTextColumn Header="Name" Binding="{Binding Name}"/>
-                        <DataGridTextColumn Header="Value" Binding="{Binding Value, Converter={StaticResource DoubleToStringConverter}}" />
+                        <DataGridTextColumn Header="Tên chỉ tiêu" Binding="{Binding Name}"/>
+                        <DataGridTextColumn Header="Giá trị gốc" Binding="{Binding Value, Converter={StaticResource DoubleToStringConverter}}" />
+                        <DataGridTextColumn Header="Giá trị nhập"/>
+                        <DataGridTextColumn Header="Hợp lệ"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Border>
@@ -92,7 +95,8 @@
                             <ColumnDefinition Width="3*"></ColumnDefinition>
                             <ColumnDefinition Width="Auto"></ColumnDefinition>
                         </Grid.ColumnDefinitions>
-                        <TextBox Grid.Column="1" FontWeight="Medium" FontSize="16" Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"  Name="txtInput" Grid.Row="0" Margin="5" BorderBrush="#92b6f0" AcceptsTab="True" AcceptsReturn="True" TextWrapping="Wrap">
+                        <TextBox Grid.Column="1" FontWeight="Medium" FontSize="16" Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}" 
+                                    Name="txtInput" Grid.Row="0" Margin="5" BorderBrush="#92b6f0" AcceptsTab="True" AcceptsReturn="True" TextWrapping="Wrap">
                         </TextBox>
                         <StackPanel Grid.Column="2" Orientation="Vertical">
                             <Button Command="{Binding PasteTextCommand}" Content="Dán" Width="60" Height="40" Margin="5" Cursor="Hand"></Button>

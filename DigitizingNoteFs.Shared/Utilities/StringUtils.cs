@@ -24,14 +24,15 @@ namespace DigitizingNoteFs.Shared.Utilities
         private static partial Regex NormalCharacterRegex();
 
 
-        public static List<List<string>> ConvertToMatrix(string data)
+        public static List<List<string>> ConvertToMatrix(string data,
+            StringSplitOptions rowOption = StringSplitOptions.RemoveEmptyEntries, StringSplitOptions colOption = StringSplitOptions.None)
         {
-            string[] lines = data.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+            string[] lines = data.Split(new[] { Environment.NewLine }, rowOption);
             List<List<string>> matrix = [];
 
             foreach (var line in lines)
             {
-                List<string> row = new(line.Split(new[] { '\t' }, StringSplitOptions.RemoveEmptyEntries));
+                List<string> row = new(line.Split(new[] { '\t' }, colOption));
                 matrix.Add(row);
             }
             return matrix;
