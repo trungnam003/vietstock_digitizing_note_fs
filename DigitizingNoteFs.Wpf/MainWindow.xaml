@@ -36,14 +36,14 @@
             </ComboBox>
             <Rectangle HorizontalAlignment="Stretch" Fill="DarkGray" Width="1" Margin="2 5"/>
             <StackPanel Orientation="Horizontal">
-                <Label VerticalAlignment="Center">Thông tin: </Label>
+                <Label VerticalAlignment="Center">Thông tin:</Label>
                 <TextBlock Text="{Binding SheetModel.StockCode}" VerticalAlignment="Center" Margin="5"></TextBlock>
                 <TextBlock Text="{Binding SheetModel.Year}" VerticalAlignment="Center" Margin="5"></TextBlock>
                 <TextBlock Text="{Binding SheetModel.ReportTerm}" VerticalAlignment="Center" Margin="5"></TextBlock>
                 <TextBlock Text="{Binding SheetModel.ReportType}" VerticalAlignment="Center" Margin="5"></TextBlock>
                 <TextBlock Text="{Binding SheetModel.AuditedStatus}" VerticalAlignment="Center" Margin="5"></TextBlock>
                 <TextBlock Text="{Binding SheetModel.IsAdjusted}" VerticalAlignment="Center" Margin="5"></TextBlock>
-                
+
             </StackPanel>
         </StackPanel>
         <!-- Row 2 -->
@@ -79,7 +79,9 @@
             </Border>
 
             <!-- Grid Splitter -->
-            <GridSplitter Grid.Column="1" Width="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ResizeBehavior="PreviousAndNext" />
+            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ResizeBehavior="PreviousAndNext" Background="#CF373E58" >
+                
+            </GridSplitter>
 
             <!-- Cột 2 -->
             <Border BorderBrush="#92b6f0" BorderThickness="1" Grid.Column="2" >
@@ -95,6 +97,20 @@
                             <ColumnDefinition Width="3*"></ColumnDefinition>
                             <ColumnDefinition Width="Auto"></ColumnDefinition>
                         </Grid.ColumnDefinitions>
+                        <Grid Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"></RowDefinition>
+                                <RowDefinition Height="1*"></RowDefinition>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5 0 5 0">
+                                <Label FontWeight="Medium" FontSize="12" Content="Chỉ tiêu: " ></Label>
+                                <Label FontWeight="Medium" FontSize="12" Content="Trung Nam Vippro" Foreground="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"></Label>
+                            </StackPanel>
+                            <ScrollViewer Margin="5" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                                <DataGrid></DataGrid>
+                            </ScrollViewer>
+                        </Grid>
                         <TextBox Grid.Column="1" FontWeight="Medium" FontSize="16" Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}" 
                                     Name="txtInput" Grid.Row="0" Margin="5" BorderBrush="#92b6f0" AcceptsTab="True" AcceptsReturn="True" TextWrapping="Wrap">
                         </TextBox>

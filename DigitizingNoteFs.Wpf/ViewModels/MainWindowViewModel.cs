@@ -437,8 +437,8 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         {
             var moneyList = new List<MoneyCell>();
             var textList = new List<TextCell>();
-            var sum = 0L;
-            var max = long.MinValue;
+            double sum = 0L;
+            double max = double.MinValue;
             int iRow = 0, iCol = 0;
             data.ForEach(row =>
             {
@@ -484,7 +484,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         /// <param name="max"></param>
         /// <param name="moneyList"></param>
         /// <param name="text"></param>
-        private static void GetMoneyAndDeleteFromCell(int iRow, int iCol, ref long sum, ref long max, ref List<MoneyCell> moneyList, ref string text)
+        private static void GetMoneyAndDeleteFromCell(int iRow, int iCol, ref double sum, ref double max, ref List<MoneyCell> moneyList, ref string text)
         {
             var regexMoney = StringUtils.MoneyStringPattern;
             var matches = Regex.Matches(text, regexMoney);
@@ -537,8 +537,8 @@ namespace DigitizingNoteFs.Wpf.ViewModels
     }
     public class SuggestModel
     {
-        public long Sum { get; set; }
-        public long Max { get; set; }
+        public double Sum { get; set; }
+        public double Max { get; set; }
         public List<TextCell>? TextCells { get; set; }
         public List<MoneyCell>? MoneyCells { get; set; }
     }

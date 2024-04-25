@@ -7,7 +7,7 @@
     }
     public class MoneyCell : MatrixCell
     {
-        public long Value { get; set; }
+        public double Value { get; set; }
         public FsNoteCell? Note { get; set; }
     }
 
