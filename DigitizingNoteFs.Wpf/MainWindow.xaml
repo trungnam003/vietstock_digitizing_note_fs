@@ -71,7 +71,8 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="NoteID" Binding="{Binding FsNoteId}"/>
                         <DataGridTextColumn Header="Tên chỉ tiêu" Binding="{Binding Name}"/>
-                        <DataGridTextColumn Header="Giá trị gốc" Binding="{Binding Value, Converter={StaticResource DoubleToStringConverter}}" />
+                        <DataGridTextColumn Header="Giá trị gốc" Binding="{Binding Value, Converter={StaticResource DoubleToStringConverter}}">
+                        </DataGridTextColumn>
                         <DataGridTextColumn Header="Giá trị nhập"/>
                         <DataGridTextColumn Header="Hợp lệ"/>
                     </DataGrid.Columns>
@@ -105,14 +106,31 @@
 
                             <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5 0 5 0">
                                 <Label FontWeight="Medium" FontSize="12" Content="Chỉ tiêu: " ></Label>
-                                <Label FontWeight="Medium" FontSize="12" Content="Trung Nam Vippro" Foreground="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"></Label>
+                                <Label FontWeight="Medium" FontSize="12" Content="{Binding SuggestedFsNoteParent.Name, Converter={StaticResource NullToAlternativeValueConverter}, ConverterParameter='Không tìm thấy chỉ tiêu phù hợp'}" Foreground="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"></Label>
                             </StackPanel>
-                            <ScrollViewer Margin="5" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                                <DataGrid></DataGrid>
+                            <ScrollViewer Margin="0" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                                <DataGrid Name="dgDataSuggestedFsNoteChildren" ItemsSource="{Binding SuggestedFsNoteChildren}" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" Margin="5">
+                                    <DataGrid.ColumnHeaderStyle>
+                                        <Style TargetType="{x:Type DataGridColumnHeader}">
+                                            <Setter Property="FontWeight" Value="Bold"/>
+                                        </Style>
+                                    </DataGrid.ColumnHeaderStyle>
+                                    <DataGrid.ItemContainerStyle>
+                                        <Style TargetType="{x:Type DataGridRow}">
+                                            <Setter Property="FontSize" Value="14"/>
+                                        </Style>
+                                    </DataGrid.ItemContainerStyle>
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="NoteID" Binding="{Binding FsNoteId}"/>
+                                        <DataGridTextColumn Header="Tên chỉ tiêu" Binding="{Binding Name}"/>
+                                        <DataGridTextColumn Header="Giá trị" Binding="{Binding Value, Converter={StaticResource DoubleToStringConverter}}">
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
                             </ScrollViewer>
                         </Grid>
                         <TextBox Grid.Column="1" FontWeight="Medium" FontSize="16" Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}" 
-                                    Name="txtInput" Grid.Row="0" Margin="5" BorderBrush="#92b6f0" AcceptsTab="True" AcceptsReturn="True" TextWrapping="Wrap">
+                            Name="txtInput" Grid.Row="1" Margin="5" BorderBrush="#92b6f0" AcceptsTab="True" AcceptsReturn="True" TextWrapping="Wrap">
                         </TextBox>
                         <StackPanel Grid.Column="2" Orientation="Vertical">
                             <Button Command="{Binding PasteTextCommand}" Content="Dán" Width="60" Height="40" Margin="5" Cursor="Hand"></Button>

@@ -15,4 +15,6 @@
 
     <converter:DoubleToStringConverter x:Key="DoubleToStringConverter"/>
     <converter:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+    <converter:NullToAlternativeValueConverter x:Key="NullToAlternativeValueConverter"/>
+
 </ResourceDictionary>

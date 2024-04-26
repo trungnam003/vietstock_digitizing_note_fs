@@ -13,4 +13,8 @@
     <PackageReference Include="NPOI" Version="2.7.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\DigitizingNoteFs.Shared\DigitizingNoteFs.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

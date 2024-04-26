@@ -3,6 +3,7 @@ using DigitizingNoteFs.Core.Models;
 using DigitizingNoteFs.Shared.Utilities;
 using DigitizingNoteFs.Wpf.ViewModels;
 using System.Collections.ObjectModel;
+using System.Windows.Input;
 
 namespace DigitizingNoteFs.Wpf.Services
 {
@@ -33,6 +34,10 @@ namespace DigitizingNoteFs.Wpf.Services
         }
         public FsNoteModel? SuggestParentNoteByTotal(SuggestModel suggestModel)
         {
+            if(suggestModel.MoneyCells == null || suggestModel.MoneyCells.Count == 0 || suggestModel.Max == double.MinValue)
+            {
+                return null;
+            }
             var sum = suggestModel.Sum;
             var max = suggestModel.Max;
             var isUserScanTotal = sum - max == max;
@@ -57,16 +62,18 @@ namespace DigitizingNoteFs.Wpf.Services
             return null;
         }
 
-        public FsNoteModel? SuggestParentNoteByChildren(SuggestModel suggestModel)
+        public Task<FsNoteModel?> SuggestParentNoteByChildren(SuggestModel suggestModel)
         {
+            FsNoteModel? parentNoteRs = null;
             const double THRESHOLD = 0.7;
             if(!Inintialized)
             {
-                return null;
+                return Task.FromResult(parentNoteRs);
             }
             if (suggestModel.TextCells == null || suggestModel.TextCells.Count == 0)
-                return null;
-            var maxRate = 0.0;
+                return Task.FromResult(parentNoteRs);
+            const double ZERO_RATE = 0.0;
+            var maxRate = ZERO_RATE;
             int parentIdWithMaxRate = 0;
             foreach (var parentNote in Mapping!)
             {
@@ -82,18 +89,22 @@ namespace DigitizingNoteFs.Wpf.Services
                             continue;
                         }
                         double maxSimilarity = 0;
-                        childrenNote.Keywords.ForEach(keyword =>
+                        foreach (var keyword in childrenNote.Keywords)
                         {
                             double currentSimilarity = StringSimilarityUtils.CalculateSimilarity(keyword, text);
                             if (currentSimilarity > maxSimilarity)
                             {
                                 maxSimilarity = currentSimilarity;
                             }
-                        });
-
+                            if(maxSimilarity >= THRESHOLD)
+                            {
+                                break;
+                            }
+                        }
                         // Nếu maxSimilarity > THRESHOLD thì xác định đây là note con của parentNote
-                        if (maxSimilarity > THRESHOLD)
+                        if (maxSimilarity >= THRESHOLD)
                         {
+                            textCell.NoteId = childrenNote.Id;
                             countSimilarity++;
                         }
                     }
@@ -105,21 +116,26 @@ namespace DigitizingNoteFs.Wpf.Services
                     parentIdWithMaxRate = parentNote.Key;
                 }
             }
-            
-            if (parentIdWithMaxRate != 0.0)
+
+            if (parentIdWithMaxRate != ZERO_RATE)
             {
-                var parentNote = ParentNoteData!.FirstOrDefault(x => x.FsNoteId == parentIdWithMaxRate);
-                if (parentNote != null)
+                parentNoteRs = ParentNoteData!.FirstOrDefault(x => x.FsNoteId == parentIdWithMaxRate);
+                if (parentNoteRs != null)
                 {
-                    return (parentNote);
+                    return Task.FromResult<FsNoteModel?>(parentNoteRs);
                 }
             }
 
-            return null;
+            return Task.FromResult<FsNoteModel?>(parentNoteRs);
         }
 
         public FsNoteModel? SuggestParentNoteByClosestNumber(SuggestModel suggestModel)
         {
+            const double _30M = 30_000_000;
+            if (suggestModel.MoneyCells == null || suggestModel.MoneyCells.Count == 0 || suggestModel.Max == double.MinValue)
+            {
+                return null;
+            }
             var sum = suggestModel.Sum;
             var max = suggestModel.Max;
             var isUserScanTotal = sum - max == max;
@@ -127,7 +143,7 @@ namespace DigitizingNoteFs.Wpf.Services
             if (isUserScanTotal)
             {
                 // Tìm số gần đúng nhất với max trong list và chênh lệch tối thiểu là 30_000_000 (30 triệu)
-                var (closest, isFound) = CoreUtils.FindClosestNumber(max, values, 30_000_000L);
+                var (closest, isFound) = CoreUtils.FindClosestNumber(max, values, _30M);
                 if (isFound)
                 {
                     var parentNote = ParentNoteData!.FirstOrDefault(x => x.Value == closest);
@@ -140,7 +156,7 @@ namespace DigitizingNoteFs.Wpf.Services
             else
             {
                 // Tìm số gần đúng nhất với sum trong list và chênh lệch tối thiểu là 30_000_000 (30 triệu)
-                var (closest, isFound) = CoreUtils.FindClosestNumber(sum, values, 30_000_000L);
+                var (closest, isFound) = CoreUtils.FindClosestNumber(sum, values, _30M);
                 if (isFound)
                 {
                     var parentNote = ParentNoteData!.FirstOrDefault(x => x.Value == closest);

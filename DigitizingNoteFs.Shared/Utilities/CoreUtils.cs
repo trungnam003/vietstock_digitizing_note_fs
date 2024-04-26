@@ -1,4 +1,5 @@
-﻿namespace DigitizingNoteFs.Shared.Utilities
+﻿
+namespace DigitizingNoteFs.Shared.Utilities
 {
     public static class CoreUtils
     {
@@ -23,19 +24,38 @@
         /// <param name="diff">Sự khác nhau tôi thiểu</param>
         /// <returns></returns>
         /// <exception cref="ArgumentException"></exception>
-        public static (T, bool) FindClosestNumber<T>(T target, List<T> list, T diff)
-            where T : IComparable<T>
-        {
-            if (IsNumericType(typeof(T)) == false)
-                throw new ArgumentException("Type must be numeric type.");
+        //public static (T, bool) FindClosestNumber<T>(T target, List<T> list, T diff)
+        //    where T : IComparable<T>
+        //{
+        //    if (IsNumericType(typeof(T)) == false)
+        //        throw new ArgumentException("Type must be numeric type.");
 
-            T closestNumber = list[0];
+        //    T closestNumber = list[0];
+        //    bool isFound = false;
+        //    dynamic minDifference = Math.Abs(Convert.ToDouble(list[0]) - Convert.ToDouble(target));
+
+        //    foreach (var number in list)
+        //    {
+        //        dynamic difference = Math.Abs(Convert.ToDouble(number) - Convert.ToDouble(target));
+        //        if (difference < minDifference && difference <= diff)
+        //        {
+        //            minDifference = difference;
+        //            closestNumber = number;
+        //            isFound = true;
+        //        }
+        //    }
+        //    return (closestNumber, isFound);
+        //}
+
+        public static (double, bool) FindClosestNumber(double target, List<double> list, double diff)
+        {
+            double closestNumber = list[0];
             bool isFound = false;
-            dynamic minDifference = Math.Abs(Convert.ToDouble(list[0]) - Convert.ToDouble(target));
+            double minDifference = Math.Abs(list[0] - target);
 
             foreach (var number in list)
             {
-                dynamic difference = Math.Abs(Convert.ToDouble(number) - Convert.ToDouble(target));
+                double difference = Math.Abs(number - target);
                 if (difference < minDifference && difference <= diff)
                 {
                     minDifference = difference;
@@ -43,7 +63,31 @@
                     isFound = true;
                 }
             }
-           
+
+            if (!isFound && closestNumber == list[0] && minDifference < diff)
+            {
+                isFound = true;
+            }
+
+            return (closestNumber, isFound);
+        }
+
+        public static (long, bool) FindClosestNumber(long target, List<long> list, long diff)
+        {
+            long closestNumber = list[0];
+            bool isFound = false;
+            long minDifference = Math.Abs(list[0] - target);
+
+            foreach (var number in list)
+            {
+                long difference = Math.Abs(number - target);
+                if (difference < minDifference && difference <= diff)
+                {
+                    minDifference = difference;
+                    closestNumber = number;
+                    isFound = true;
+                }
+            }
             return (closestNumber, isFound);
         }
 
@@ -52,4 +96,5 @@
             return type == typeof(int) || type == typeof(long) || type == typeof(float) || type == typeof(double) || type == typeof(decimal);
         }
     }
+
 }

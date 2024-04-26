@@ -14,6 +14,7 @@
     public class TextCell : MatrixCell
     {
         public string? Value { get; set; }
+        public int NoteId { get; set; }
     }
 
     public class FsNoteCell : MatrixCell

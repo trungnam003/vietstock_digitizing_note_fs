@@ -24,6 +24,31 @@ namespace DigitizingNoteFs.Wpf
                 var note = row.Item as FsNoteModel;
             }
         }
+
+        private void dgDataFsSheet_MouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            var cell = sender as DataGridCell;
+            if (cell != null)
+            {
+                cell.ContextMenu.IsOpen = true;
+                e.Handled = true;
+            }
+        }
+
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            // copy cell value
+            var menuItem = sender as MenuItem;
+            if (menuItem != null)
+            {
+                var cell = menuItem.DataContext as DataGridCell;
+                if (cell != null)
+                {
+                    Clipboard.SetText(cell.Content.ToString());
+                }
+            }
+
+        }
     }
 
     public partial class MainWindow

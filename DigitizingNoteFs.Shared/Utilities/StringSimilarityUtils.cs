@@ -12,7 +12,7 @@ namespace DigitizingNoteFs.Shared.Utilities
         public static double CalculateSimilarity(string str1, string str2)
         {
             var similarity1 = new Cosine().Similarity(str1, str2);
-            var similarity2 = new Jaccard().Similarity(str1, str2);
+            var similarity2 = new RatcliffObershelp().Similarity(str1, str2);
             return CombineSimilarity(similarity1, similarity2);
         }
     }

@@ -6,6 +6,7 @@ using DigitizingNoteFs.Core.Common;
 using DigitizingNoteFs.Core.Models;
 using DigitizingNoteFs.Shared.Utilities;
 using DigitizingNoteFs.Wpf.Services;
+using Force.DeepCloner;
 using Microsoft.Win32;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
@@ -116,10 +117,31 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             set
             {
                 _inputText = value;
-                OnPropertyChanged("InputText");
+                OnPropertyChanged(nameof(InputText));
                 StartDebounceTimer();
             }
         }
+
+        private FsNoteModel? _suggestedFsNoteParent;
+        public FsNoteModel? SuggestedFsNoteParent
+        {
+            get { return _suggestedFsNoteParent; }
+            set
+            {
+                SetProperty(ref _suggestedFsNoteParent, value);
+            }
+        }
+
+        private ObservableCollection<FsNoteModel> _suggestedFsNoteChildren;
+        public ObservableCollection<FsNoteModel> SuggestedFsNoteChildren
+        {
+            get { return _suggestedFsNoteChildren; }
+            set
+            {
+                SetProperty(ref _suggestedFsNoteChildren, value);
+            }
+        }
+
         #endregion
 
         #region Properties
@@ -473,7 +495,34 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                 TextCells = textList,
                 MoneyCells = moneyList
             };
-            await GetParentNoteSuggestions(suggestModel);
+            var suggested = await GetParentNoteSuggestions(suggestModel);
+            SuggestedFsNoteParent = suggested;
+
+            if (suggested != null)
+            {
+                var children = Data.Where(x => x.ParentId == suggested.FsNoteId).Select(x => x.DeepClone()).ToList();
+                TryIdentifyChildrenNoteWithMoney(ref suggestModel);
+
+                foreach (var moneyCell in suggestModel.MoneyCells!)
+                {
+                    if (moneyCell.Note == null)
+                    {
+                        continue;
+                    }
+                    var noteId = moneyCell.Note.NoteId;
+                    var child = children.FirstOrDefault(x => x.FsNoteId == noteId);
+                    if (child != null)
+                    {
+                        child.Value = moneyCell.Value;
+                    }
+                }
+
+                SuggestedFsNoteChildren = new(children);
+            }
+            else
+            {
+                SuggestedFsNoteChildren = new();
+            }
         }
         /// <summary>
         /// Lấy dữ liệu tiền từ ô trong ma trận và xóa dữ liệu tiền khỏi ô
@@ -515,22 +564,77 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             }
         }
 
-        private async Task GetParentNoteSuggestions(SuggestModel suggestModel)
+        private async Task<FsNoteModel?> GetParentNoteSuggestions(SuggestModel suggestModel)
         {
             var services = new SuggestServices();
 
             services.InitSuggest(GroupedData, Data, ParentNoteData, Mapping);
 
-            var parentSuggest1 = services.SuggestParentNoteByTotal(suggestModel);
-            var parentSuggest2 = services.SuggestParentNoteByClosestNumber(suggestModel);
-            FsNoteModel? parentSuggest3 = services.SuggestParentNoteByChildren(suggestModel);
-            //if (parentSuggest1 == null && parentSuggest2 == null)
-            //{
-            //    parentSuggest3 =  await services.SuggestParentNoteByChildren(suggestModel);
-            //}
-            if(parentSuggest3 == null)
+            var parentSuggest1 = services.SuggestParentNoteByTotal(suggestModel); // độ ưu tiên 1
+            var parentSuggest3 = await services.SuggestParentNoteByChildren(suggestModel);
+            if (parentSuggest1 == null)
             {
-                return;
+                if (parentSuggest3 != null)
+                {
+                    return parentSuggest3;
+                }
+                var parentSuggest2 = services.SuggestParentNoteByClosestNumber(suggestModel);
+                if (parentSuggest2 != null)
+                {
+                    return parentSuggest2;
+                }
+            }
+            else
+            {
+                return (parentSuggest1);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Xác định các ô chứa dữ liệu tiền và các ô chứa dữ liệu text
+        /// </summary>
+        private void TryIdentifyChildrenNoteWithMoney(ref SuggestModel suggestModel)
+        {
+            var hashSet = new HashSet<string>();
+            foreach (var textCell in suggestModel.TextCells!)
+            {
+                if (textCell.NoteId == 0)
+                    continue;
+
+                // loop into MoneyCells and calculate the distance between textCell and moneyCell
+                var minDistance = double.MaxValue;
+
+                // threshold distance arround 2 cells
+                const double THRESHOLD = 1.45;
+                MoneyCell? moneyCell2 = null;
+                foreach (var moneyCell in suggestModel.MoneyCells!)
+                {
+                    var coordinate = $"{moneyCell.Row}-{moneyCell.Col}";
+                    if (hashSet.Contains(coordinate))
+                    {
+                        continue;
+                    }
+                    // calculate distance between textCell and moneyCell
+                    var distance = CoreUtils.EuclideanDistance(textCell.Row, textCell.Col, moneyCell.Row, moneyCell.Col);
+                    
+                    if (distance < minDistance && distance < THRESHOLD)
+                    {
+                        minDistance = distance;
+                        moneyCell2 = moneyCell;
+                    }
+                }
+
+                if(minDistance != double.MaxValue && moneyCell2 != null)
+                {
+                    hashSet.Add($"{moneyCell2.Row}-{moneyCell2.Col}");
+                    moneyCell2.Note = new FsNoteCell
+                    {
+                        NoteId = textCell.NoteId,
+                        Row = textCell.Row,
+                        Col = textCell.Col,
+                    };
+                }
             }
         }
         #endregion
