@@ -13,6 +13,7 @@ using NPOI.SS.UserModel;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using Match = System.Text.RegularExpressions.Match;
@@ -521,7 +522,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             }
             else
             {
-                SuggestedFsNoteChildren = new();
+                SuggestedFsNoteChildren = [];
             }
         }
         /// <summary>
@@ -594,28 +595,26 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         /// <summary>
         /// Xác định các ô chứa dữ liệu tiền và các ô chứa dữ liệu text
         /// </summary>
-        private void TryIdentifyChildrenNoteWithMoney(ref SuggestModel suggestModel)
+        private static void TryIdentifyChildrenNoteWithMoney(ref SuggestModel suggestModel)
         {
-            var hashSet = new HashSet<string>();
+            Dictionary<string, double> coordinateMoneyDistance = new();
             foreach (var textCell in suggestModel.TextCells!)
             {
                 if (textCell.NoteId == 0)
                     continue;
 
-                // loop into MoneyCells and calculate the distance between textCell and moneyCell
                 var minDistance = double.MaxValue;
 
                 // threshold distance arround 2 cells
-                const double THRESHOLD = 1.45;
+                const double THRESHOLD = 5;
                 MoneyCell? moneyCell2 = null;
                 foreach (var moneyCell in suggestModel.MoneyCells!)
                 {
-                    var coordinate = $"{moneyCell.Row}-{moneyCell.Col}";
-                    if (hashSet.Contains(coordinate))
-                    {
-                        continue;
-                    }
-                    // calculate distance between textCell and moneyCell
+                    //string coordinate = $"{moneyCell.Row}-{moneyCell.Col}";
+                    //if (coordinateMoneyDistance.ContainsKey(coordinate))
+                    //{
+                    //    continue;
+                    //}
                     var distance = CoreUtils.EuclideanDistance(textCell.Row, textCell.Col, moneyCell.Row, moneyCell.Col);
                     
                     if (distance < minDistance && distance < THRESHOLD)
@@ -627,13 +626,31 @@ namespace DigitizingNoteFs.Wpf.ViewModels
 
                 if(minDistance != double.MaxValue && moneyCell2 != null)
                 {
-                    hashSet.Add($"{moneyCell2.Row}-{moneyCell2.Col}");
-                    moneyCell2.Note = new FsNoteCell
+                    string coordinate = $"{moneyCell2.Row}-{moneyCell2.Col}";
+                    if (coordinateMoneyDistance.TryGetValue(coordinate, out double value))
                     {
-                        NoteId = textCell.NoteId,
-                        Row = textCell.Row,
-                        Col = textCell.Col,
-                    };
+                        var distance = value;
+                        if (minDistance < distance)
+                        {
+                            coordinateMoneyDistance[coordinate] = minDistance;
+                            moneyCell2.Note = new FsNoteCell
+                            {
+                                NoteId = textCell.NoteId,
+                                Row = textCell.Row,
+                                Col = textCell.Col,
+                            };
+                        }
+                    }
+                    else
+                    {
+                        coordinateMoneyDistance.Add($"{moneyCell2.Row}-{moneyCell2.Col}", minDistance);
+                        moneyCell2.Note = new FsNoteCell
+                        {
+                            NoteId = textCell.NoteId,
+                            Row = textCell.Row,
+                            Col = textCell.Col,
+                        };
+                    }
                 }
             }
         }

@@ -2,6 +2,7 @@
 using DigitizingNoteFs.Core.Models;
 using DigitizingNoteFs.Shared.Utilities;
 using DigitizingNoteFs.Wpf.ViewModels;
+using Force.DeepCloner;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 
@@ -66,37 +67,45 @@ namespace DigitizingNoteFs.Wpf.Services
         {
             FsNoteModel? parentNoteRs = null;
             const double THRESHOLD = 0.7;
+
             if(!Inintialized)
             {
                 return Task.FromResult(parentNoteRs);
             }
+
             if (suggestModel.TextCells == null || suggestModel.TextCells.Count == 0)
                 return Task.FromResult(parentNoteRs);
+
             const double ZERO_RATE = 0.0;
             var maxRate = ZERO_RATE;
             int parentIdWithMaxRate = 0;
+
             foreach (var parentNote in Mapping!)
             {
                 var total = parentNote.Value.Count;
                 var countSimilarity = 0;
-                parentNote.Value.ForEach(childrenNote =>
+                var childrenNotes = parentNote.Value;
+                //List<TextCell> cloneTextCells = suggestModel.TextCells.Select(x => x.DeepClone()).ToList();
+
+                foreach (var childNote in childrenNotes)
                 {
+                    //List<TextCell> cloneTextCells = suggestModel.TextCells.Select(x => x.DeepClone()).ToList();
                     foreach (var textCell in suggestModel.TextCells)
                     {
                         var text = textCell.Value;
-                        if(string.IsNullOrWhiteSpace(text))
+                        if (string.IsNullOrWhiteSpace(text))
                         {
                             continue;
                         }
                         double maxSimilarity = 0;
-                        foreach (var keyword in childrenNote.Keywords)
+                        foreach (var keyword in childNote.Keywords)
                         {
                             double currentSimilarity = StringSimilarityUtils.CalculateSimilarity(keyword, text);
                             if (currentSimilarity > maxSimilarity)
                             {
                                 maxSimilarity = currentSimilarity;
                             }
-                            if(maxSimilarity >= THRESHOLD)
+                            if (maxSimilarity >= THRESHOLD)
                             {
                                 break;
                             }
@@ -104,17 +113,19 @@ namespace DigitizingNoteFs.Wpf.Services
                         // Nếu maxSimilarity > THRESHOLD thì xác định đây là note con của parentNote
                         if (maxSimilarity >= THRESHOLD)
                         {
-                            textCell.NoteId = childrenNote.Id;
+                            textCell.NoteId = childNote.Id;
                             countSimilarity++;
                         }
                     }
-                });
+                }
+
                 var rate = (double)countSimilarity / total;
                 if (rate > maxRate)
                 {
                     maxRate = rate;
                     parentIdWithMaxRate = parentNote.Key;
                 }
+
             }
 
             if (parentIdWithMaxRate != ZERO_RATE)

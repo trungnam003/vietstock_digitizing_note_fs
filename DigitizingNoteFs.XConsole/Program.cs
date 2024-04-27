@@ -6,20 +6,13 @@ namespace DigitizingNoteFs.XConsole
         
         static void Main(string[] args)
         {
-            int x1 = 0, y1 = 0, x2 = 1, y2 = 1;
+           var str1 = "chi phi nhan cong";
+            var str2 = "chi phi nhap hang";
 
-            var distance = CoreUtils.EuclideanDistance(x1, y1, x2, y2);
-            Console.WriteLine(distance);
-            var abc1 = new ABC()
-            {
-                Name = "abc1"
-            };
-
+            var similarity = StringSimilarityUtils.CalculateSimilarity(str1, str2);
+            Console.WriteLine(similarity);
         }
     }
 
-    public  class ABC
-    {
-        public string Name { get; set; }
-    }
+   
 }
