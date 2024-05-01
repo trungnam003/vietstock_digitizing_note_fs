@@ -86,18 +86,22 @@ namespace DigitizingNoteFs.Wpf.Services
                 var countSimilarity = 0;
                 var childrenNotes = parentNote.Value;
                 //List<TextCell> cloneTextCells = suggestModel.TextCells.Select(x => x.DeepClone()).ToList();
-
+                // store textCell coordinates and current similarity
+                var textCellCoordinates = new Dictionary<string, double>();
                 foreach (var childNote in childrenNotes)
                 {
                     //List<TextCell> cloneTextCells = suggestModel.TextCells.Select(x => x.DeepClone()).ToList();
                     foreach (var textCell in suggestModel.TextCells)
                     {
+                        var coordinate = $"{textCell.Row}-{textCell.Col}";
+
                         var text = textCell.Value;
                         if (string.IsNullOrWhiteSpace(text))
                         {
                             continue;
                         }
                         double maxSimilarity = 0;
+
                         foreach (var keyword in childNote.Keywords)
                         {
                             double currentSimilarity = StringSimilarityUtils.CalculateSimilarity(keyword, text);
@@ -111,9 +115,10 @@ namespace DigitizingNoteFs.Wpf.Services
                             }
                         }
                         // Nếu maxSimilarity > THRESHOLD thì xác định đây là note con của parentNote
-                        if (maxSimilarity >= THRESHOLD)
+                        if (maxSimilarity >= THRESHOLD && maxSimilarity > textCell.Similarity)
                         {
                             textCell.NoteId = childNote.Id;
+                            textCell.Similarity = maxSimilarity;
                             countSimilarity++;
                         }
                     }
@@ -125,10 +130,19 @@ namespace DigitizingNoteFs.Wpf.Services
                     maxRate = rate;
                     parentIdWithMaxRate = parentNote.Key;
                 }
+                else
+                {
+                    // clear textCells
+                    foreach (var textCell in suggestModel.TextCells)
+                    {
+                        textCell.NoteId = 0;
+                        textCell.Similarity = 0.0;
+                    }
+                }
 
             }
 
-            if (parentIdWithMaxRate != ZERO_RATE)
+            if (maxRate != ZERO_RATE)
             {
                 parentNoteRs = ParentNoteData!.FirstOrDefault(x => x.FsNoteId == parentIdWithMaxRate);
                 if (parentNoteRs != null)

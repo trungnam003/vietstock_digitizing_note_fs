@@ -15,6 +15,7 @@
     {
         public string? Value { get; set; }
         public int NoteId { get; set; }
+        public double Similarity { get; set; } = 0.0;
     }
 
     public class FsNoteCell : MatrixCell
