@@ -1,5 +1,6 @@
 ﻿using DigitizingNoteFs.Core.Models;
 using DigitizingNoteFs.Wpf.ViewModels;
+using Force.DeepCloner;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -21,7 +22,14 @@ namespace DigitizingNoteFs.Wpf
         {
             if (sender is DataGridRow row)
             {
-                var note = row.Item as FsNoteModel;
+                if (row.Item is not FsNoteModel note)
+                {
+                    return;
+                }
+
+                var children = _viewModel.Data.Where(x => x.ParentId == note.FsNoteId && x.Group == note.Group).Select(x => x.DeepClone()).ToList();
+                _viewModel.SuggestedFsNoteChildren = new(children);
+                _viewModel.SuggestedFsNoteParent = note;
             }
         }
 
@@ -47,7 +55,6 @@ namespace DigitizingNoteFs.Wpf
                     Clipboard.SetText(cell.Content.ToString());
                 }
             }
-
         }
     }
 

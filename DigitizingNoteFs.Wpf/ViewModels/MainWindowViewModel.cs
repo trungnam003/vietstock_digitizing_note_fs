@@ -12,6 +12,7 @@ using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -22,6 +23,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
 {
     internal partial class MainWindowViewModel : ObservableObject
     {
+
         #region Observable Properties
         private bool _isLoading;
         public bool IsLoading
@@ -143,6 +145,16 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             }
         }
 
+        private ObservableCollection<MoneyCell>? moneyCells;
+        public ObservableCollection<MoneyCell>? MoneyCells
+        {
+            get { return moneyCells; }
+            set
+            {
+                SetProperty(ref moneyCells, value);
+            }
+        }
+
         #endregion
 
         #region Properties
@@ -230,7 +242,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             const int COL_NOTE_VALUE = 5;
 
             int currentParentId = 0;
-
+            Dictionary<int, int> countGroup = [];
             for (int i = START_ROW_INDEX; i <= sheet.LastRowNum; i++)
             {
                 try
@@ -242,9 +254,15 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                     }
                     var model = new FsNoteModel();
                     string? name = row.GetCell(COL_NOTE_NAME).ToString();
-                    bool inValidNoteId = !int.TryParse(row.GetCell(COL_NOTE_ID).ToString(), out int noteId) && noteId == 0;
+                    // kiểm tra nếu ô màu đỏ thì bỏ qua
+                    var cellColor = row.GetCell(COL_NOTE_NAME).CellStyle.FillForegroundColorColor;
+                    Color colorTarget = Color.FromArgb(cellColor.RGB[0], cellColor.RGB[1], cellColor.RGB[2]);
+
                     bool inValidName = string.IsNullOrEmpty(name);
-                    if (inValidNoteId && inValidName)
+                    bool inValidNoteId = !int.TryParse(row.GetCell(COL_NOTE_ID).ToString(), out int noteId) && noteId == 0;
+                    bool inValidColor = CoreUtils.IsColorInRangeRed(colorTarget);
+
+                    if (inValidNoteId || inValidName || inValidColor)
                     {
                         continue;
                     }
@@ -269,6 +287,8 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                         model.ParentId = currentParentId;
                         model.Cell = new(i, COL_NOTE_VALUE);
                         model.CellAddress = $"{(char)('A' + COL_NOTE_VALUE)}{i}";
+                        model.Group = countGroup.TryGetValue(currentParentId, out int group) ? group : 0;
+                        Data.Add(model);
                     }
                     else
                     {
@@ -276,10 +296,18 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                         {
                             continue;
                         }
+
                         model.IsParent = true;
                         model.ParentId = 0;
                         currentParentId = noteId;
-
+                        if (countGroup.TryGetValue(currentParentId, out int value))
+                        {
+                            countGroup[currentParentId] = ++value;
+                        }
+                        else
+                        {
+                            countGroup[currentParentId] = 1;
+                        }
                         var cellParentValue = row.GetCell(COL_NOTE_PARENT_VALUE);
                         if (cellParentValue == null)
                         {
@@ -289,10 +317,11 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                         {
                             model.Value = cellParentValue.NumericCellValue;
                         }
+                        model.Group = countGroup.TryGetValue(currentParentId, out int group) ? group : 0;
                         ParentNoteData.Add(model);
+                       
                     }
 
-                    Data.Add(model);
                 }
                 catch (Exception)
                 {
@@ -388,6 +417,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                 const int COL_KEYWORD = 2;
                 const int COL_IS_PARENT = 3;
                 int currentParentId = 0;
+                Dictionary<int, int> countGroup = [];
                 for (int i = START_ROW; i <= sheet.LastRowNum; i++)
                 {
                     var row = sheet.GetRow(i);
@@ -408,10 +438,16 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                     bool isParent = cellIsParent != null && cellIsParent.StringCellValue.ToLower().Equals("x");
                     if (isParent)
                     {
+                        var prevParentId = currentParentId;
                         currentParentId = (int)cellNoteId.NumericCellValue;
+                        if (prevParentId != 0 && prevParentId == currentParentId)
+                        {
+                            countGroup[prevParentId] = countGroup.TryGetValue(prevParentId, out int value) ? value + 1 : 1;
+                        }
                         if (!Mapping.ContainsKey(currentParentId))
                         {
                             Mapping[currentParentId] = [];
+                            countGroup[currentParentId] = 1;
                         }
                         continue;
                     }
@@ -428,6 +464,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                         model.Keywords = keywords.Select(x => x.Trim()).ToList();
                     }
                     model.ParentId = currentParentId;
+                    model.Group = countGroup.TryGetValue(currentParentId, out int group) ? group : 0;
                     Mapping[currentParentId].Add(model);
                 }
                 var d = Mapping;
@@ -524,6 +561,9 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             {
                 SuggestedFsNoteChildren = [];
             }
+
+            // map money
+            MoneyCells = new(moneyList);
         }
         /// <summary>
         /// Lấy dữ liệu tiền từ ô trong ma trận và xóa dữ liệu tiền khỏi ô

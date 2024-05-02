@@ -10,5 +10,6 @@ namespace DigitizingNoteFs.Core.Models
         public int FsNoteId { get; set; }
         public int ParentId { get; set; }
         public bool IsParent { get; set; }
+        public int Group { get; set; }
     }
 }

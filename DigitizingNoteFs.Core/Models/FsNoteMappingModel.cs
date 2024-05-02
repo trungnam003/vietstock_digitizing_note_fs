@@ -8,5 +8,6 @@ namespace DigitizingNoteFs.Core.Models
         public int ParentId { get; set; }
         public string Name { get; set; } = string.Empty;
         public List<string> Keywords { get; set; } = [];
+        public int Group { get; set; }
     }
 }

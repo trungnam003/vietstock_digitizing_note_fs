@@ -1,4 +1,6 @@
 ﻿
+using System.Drawing;
+
 namespace DigitizingNoteFs.Shared.Utilities
 {
     public static class CoreUtils
@@ -94,6 +96,20 @@ namespace DigitizingNoteFs.Shared.Utilities
         public static bool IsNumericType(Type type)
         {
             return type == typeof(int) || type == typeof(long) || type == typeof(float) || type == typeof(double) || type == typeof(decimal);
+        }
+
+        // create a method check color in range of color
+        public static bool IsColorInRange(Color color, Color targetColor, int rangeRed, int rangeBlue, int rangeGreen)
+        {
+            return Math.Abs(color.R - targetColor.R) <= rangeRed
+                && Math.Abs(color.G - targetColor.G) <= rangeGreen
+                && Math.Abs(color.B - targetColor.B) <= rangeBlue;
+        }
+
+        // in range red with default range of blue and green
+        public static bool IsColorInRangeRed(Color targetColor, int rangeRed = 200)
+        {
+            return IsColorInRange(Color.Red, targetColor, rangeRed, 50, 50);
         }
     }
 
