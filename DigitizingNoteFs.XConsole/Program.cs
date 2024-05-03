@@ -6,13 +6,12 @@ namespace DigitizingNoteFs.XConsole
         
         static void Main(string[] args)
         {
-           //var str1 = "chi phi nhan cong";
-           // var str2 = "chi phi nhap hang";
+           var str1 = "so du dau ky";
+           var str2 = "so dau ";
 
-           // var similarity = StringSimilarityUtils.CalculateSimilarity(str1, str2);
-           // Console.WriteLine(similarity);
-           var dct = new Dictionary<(int, int), string>();
-           
+            var similarity = StringSimilarityUtils.CalculateSimilarity(str1, str2);
+            Console.WriteLine(similarity);
+
         }
     }
 

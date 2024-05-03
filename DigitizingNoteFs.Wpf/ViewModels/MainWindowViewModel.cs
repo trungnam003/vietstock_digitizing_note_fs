@@ -8,6 +8,7 @@ using DigitizingNoteFs.Shared.Utilities;
 using DigitizingNoteFs.Wpf.Services;
 using Force.DeepCloner;
 using Microsoft.Win32;
+using NPOI.HSSF.Record.CF;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using System.Collections.ObjectModel;
@@ -161,6 +162,8 @@ namespace DigitizingNoteFs.Wpf.ViewModels
 
         public List<ComboBoxPairs> SheetNames { get; set; }
         public Dictionary<int, List<FsNoteMappingModel>> Mapping { get; set; } = [];
+        public HashSet<int> MappingIgnore { get; set; } = [];
+
         private HSSFWorkbook? _workbook = null;
         private Timer debounceTimer;
         #endregion
@@ -412,10 +415,22 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                 }
 
                 var sheet = _workbook.GetSheet("Mapping");
+
+                if (sheet == null)
+                {
+                    MessageBox.Show("Mapping?");
+                    return;
+                }
+
+                const string IGNORE_CHILD_FORMULA_KEY = "#";
+                const string IGNORE_PARENT_KEY = "x";
+                const string OTHER_KEY = "*";
+
                 const int START_ROW = 1;
                 const int COL_NOTE_ID = 0;
                 const int COL_KEYWORD = 2;
                 const int COL_IS_PARENT = 3;
+
                 int currentParentId = 0;
                 Dictionary<int, int> countGroup = [];
                 for (int i = START_ROW; i <= sheet.LastRowNum; i++)
@@ -449,6 +464,10 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                             Mapping[currentParentId] = [];
                             countGroup[currentParentId] = 1;
                         }
+                        if (cellKeyword != null && cellKeyword.StringCellValue.ToLower().Equals(IGNORE_PARENT_KEY))
+                        {
+                            _ = MappingIgnore.Add(currentParentId);
+                        }
                         continue;
                     }
 
@@ -460,9 +479,21 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                     var rawKeyword = cellKeyword == null ? string.Empty : cellKeyword.ToString();
                     if (!string.IsNullOrEmpty(rawKeyword))
                     {
-                        var keywords = new List<string>(rawKeyword.Split(','));
-                        model.Keywords = keywords.Select(x => x.Trim()).ToList();
+                        if (rawKeyword.Equals(OTHER_KEY))
+                        {
+                            model.IsOther = true;
+                        }
+                        else if(rawKeyword.Equals(IGNORE_CHILD_FORMULA_KEY))
+                        {
+                            model.IsFormula = true;
+                        }
+                        else
+                        {
+                            var keywords = new List<string>(rawKeyword.Split(','));
+                            model.Keywords = keywords.Select(x => x.Trim()).ToList();
+                        }
                     }
+                    
                     model.ParentId = currentParentId;
                     model.Group = countGroup.TryGetValue(currentParentId, out int group) ? group : 0;
                     Mapping[currentParentId].Add(model);
@@ -484,6 +515,10 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         {
             Application.Current.Dispatcher.Invoke(async () =>
             {
+                if(string.IsNullOrWhiteSpace(InputText))
+                {
+                    return;
+                }
                 var result = StringUtils.ConvertToMatrix(InputText);
                 await HandleData(result);
             });
@@ -509,7 +544,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                     // Lấy dữ liệu tiền từ ô trong ma trận và xóa dữ liệu tiền khỏi ô
                     GetMoneyAndDeleteFromCell(iRow, iCol, ref sum, ref max, ref moneyList, ref text);
 
-                    text = text.RemoveSign4VietnameseString().RemoveSpecialCharacters();
+                    text = text.RemoveSign4VietnameseString().RemoveSpecialCharacters().Trim();
 
                     if (!string.IsNullOrWhiteSpace(text))
                     {
@@ -538,23 +573,27 @@ namespace DigitizingNoteFs.Wpf.ViewModels
 
             if (suggested != null)
             {
+                var count = TryIdentifyChidrenNoteWithText(ref suggestModel, suggested);
                 var children = Data.Where(x => x.ParentId == suggested.FsNoteId).Select(x => x.DeepClone()).ToList();
-                TryIdentifyChildrenNoteWithMoney(ref suggestModel);
 
-                foreach (var moneyCell in suggestModel.MoneyCells!)
+                if (count > 0)
                 {
-                    if (moneyCell.Note == null)
+                    TryIdentifyChildrenNoteWithMoney(ref suggestModel);
+
+                    foreach (var moneyCell in suggestModel.MoneyCells!)
                     {
-                        continue;
-                    }
-                    var noteId = moneyCell.Note.NoteId;
-                    var child = children.FirstOrDefault(x => x.FsNoteId == noteId);
-                    if (child != null)
-                    {
-                        child.Value = moneyCell.Value;
+                        if (moneyCell.Note == null)
+                        {
+                            continue;
+                        }
+                        var noteId = moneyCell.Note.NoteId;
+                        var child = children.FirstOrDefault(x => x.FsNoteId == noteId);
+                        if (child != null)
+                        {
+                            child.Value = moneyCell.Value;
+                        }
                     }
                 }
-
                 SuggestedFsNoteChildren = new(children);
             }
             else
@@ -609,20 +648,15 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         {
             var services = new SuggestServices();
 
-            services.InitSuggest(GroupedData, Data, ParentNoteData, Mapping);
+            services.InitSuggest(ParentNoteData, Mapping, MappingIgnore);
 
-            var parentSuggest1 = services.SuggestParentNoteByTotal(suggestModel); // độ ưu tiên 1
-            var parentSuggest3 = await services.SuggestParentNoteByChildren(suggestModel);
+            var parentSuggest1 = services.SuggestParentNoteByTotal(suggestModel); 
             if (parentSuggest1 == null)
             {
+                var parentSuggest3 = await services.SuggestParentNoteByChildren(suggestModel);
                 if (parentSuggest3 != null)
                 {
                     return parentSuggest3;
-                }
-                var parentSuggest2 = services.SuggestParentNoteByClosestNumber(suggestModel);
-                if (parentSuggest2 != null)
-                {
-                    return parentSuggest2;
                 }
             }
             else
@@ -633,7 +667,52 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         }
 
         /// <summary>
-        /// Xác định các ô chứa dữ liệu tiền và các ô chứa dữ liệu text
+        /// Xác định các ô chứa dữ liệu text phù hợp với các TM nào
+        /// </summary>
+        /// <param name="suggestModel"></param>
+        private int TryIdentifyChidrenNoteWithText(ref SuggestModel suggestModel, FsNoteModel suggested)
+        {
+            if (suggestModel.TextCells == null || suggestModel.TextCells.Count == 0)
+                return 0;
+            var childrenNotes = Mapping[suggested.FsNoteId].Where(x => x.Keywords.Count > 0 && !x.IsFormula && !x.IsOther).ToList();
+            const double THRESHOLD = 0.65;
+
+            foreach (var childNote in childrenNotes)
+            {
+                foreach (var textCell in suggestModel.TextCells)
+                {
+                    var text = textCell.Value;
+                    if (string.IsNullOrWhiteSpace(text))
+                    {
+                        continue;
+                    }
+                    double maxSimilarity = 0;
+
+                    foreach (var keyword in childNote.Keywords)
+                    {
+                        double currentSimilarity = StringSimilarityUtils.CalculateSimilarity(keyword, text);
+                        if (currentSimilarity > maxSimilarity)
+                        {
+                            maxSimilarity = currentSimilarity;
+                        }
+                        if (maxSimilarity >= THRESHOLD)
+                        {
+                            break;
+                        }
+                    }
+                    // Nếu maxSimilarity > THRESHOLD thì xác định đây là note con của parentNote
+                    if (maxSimilarity >= THRESHOLD && maxSimilarity > textCell.Similarity)
+                    {
+                        textCell.NoteId = childNote.Id;
+                        textCell.Similarity = maxSimilarity;
+                    }
+                }
+            }
+            return suggestModel.TextCells.Where(x => x.NoteId > 0).ToList().Count;
+        }
+
+        /// <summary>
+        /// Xác định các ô chứa dữ liệu tiền phù hợp với các ô chứa dữ liệu text
         /// </summary>
         private static void TryIdentifyChildrenNoteWithMoney(ref SuggestModel suggestModel)
         {

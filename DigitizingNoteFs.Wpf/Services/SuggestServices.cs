@@ -10,32 +10,34 @@ namespace DigitizingNoteFs.Wpf.Services
 {
     public class SuggestServices
     {
-        public ObservableGroupedCollection<int, FsNoteModel>? GroupedData { get; private set; }
-        public ObservableCollection<FsNoteModel>? Data { get; private set; }
+        
         public ObservableCollection<FsNoteModel>? ParentNoteData { get; private set; }
         public Dictionary<int, List<FsNoteMappingModel>>? Mapping { get; private set; }
+        public HashSet<int>? MappingIgnore { get; private set; }
 
-        public bool Inintialized => GroupedData != null && Data != null && ParentNoteData != null && Mapping != null;
+        public bool Inintialized => ParentNoteData != null && Mapping != null && MappingIgnore != null;
 
         public void InitSuggest(
 
-            ObservableGroupedCollection<int, FsNoteModel> groupedData,
-            ObservableCollection<FsNoteModel> data,
             ObservableCollection<FsNoteModel> parentNoteData,
-            Dictionary<int, List<FsNoteMappingModel>> mapping
+            Dictionary<int, List<FsNoteMappingModel>> mapping,
+            HashSet<int> mappingIgnore
 
             )
         {
 
-            GroupedData = groupedData;
-            Data = data;
             ParentNoteData = parentNoteData;
             Mapping = mapping;
+            MappingIgnore = mappingIgnore;
 
         }
         public FsNoteModel? SuggestParentNoteByTotal(SuggestModel suggestModel)
         {
-            if(suggestModel.MoneyCells == null || suggestModel.MoneyCells.Count == 0 || suggestModel.Max == double.MinValue)
+            if (!Inintialized)
+            {
+                return null;
+            }
+            if (suggestModel.MoneyCells == null || suggestModel.MoneyCells.Count == 0 || suggestModel.Max == double.MinValue)
             {
                 return null;
             }
@@ -62,11 +64,15 @@ namespace DigitizingNoteFs.Wpf.Services
 
             return null;
         }
-
+        /// <summary>
+        /// Xác định parentNote dựa trên các note con
+        /// </summary>
+        /// <param name="suggestModel"></param>
+        /// <returns></returns>
         public Task<FsNoteModel?> SuggestParentNoteByChildren(SuggestModel suggestModel)
         {
             FsNoteModel? parentNoteRs = null;
-            const double THRESHOLD = 0.7;
+            const double THRESHOLD = 0.65;
 
             if(!Inintialized)
             {
@@ -79,19 +85,23 @@ namespace DigitizingNoteFs.Wpf.Services
             const double ZERO_RATE = 0.0;
             var maxRate = ZERO_RATE;
             int parentIdWithMaxRate = 0;
-            var dctParentNote = new Dictionary<int, List<TextCell>>();
+
+            var cloneTextCells = suggestModel.TextCells.Select(x => x.DeepClone()).ToList();
             foreach (var parentNote in Mapping!)
             {
-                var total = parentNote.Value.Count;
+                var total = cloneTextCells.Count;
                 var countSimilarity = 0;
-                var childrenNotes = parentNote.Value;
-                List<TextCell> cloneTextCells = suggestModel.TextCells.Select(x => x.DeepClone()).ToList();
+                var childrenNotes = parentNote.Value.Where(x => x.Keywords.Count > 0 && !x.IsFormula && !x.IsOther).ToList();
+
+                if (MappingIgnore!.Contains(parentNote.Key))
+                {
+                    continue;
+                }
+
                 foreach (var childNote in childrenNotes)
                 {
                     foreach (var textCell in cloneTextCells)
                     {
-                        var coordinate = $"{textCell.Row}-{textCell.Col}";
-
                         var text = textCell.Value;
                         if (string.IsNullOrWhiteSpace(text))
                         {
@@ -121,23 +131,12 @@ namespace DigitizingNoteFs.Wpf.Services
                     }
                 }
 
-                dctParentNote.Add(parentNote.Key, cloneTextCells);
-
                 var rate = (double)countSimilarity / total;
                 if (rate > maxRate)
                 {
                     maxRate = rate;
                     parentIdWithMaxRate = parentNote.Key;
                 }
-                //else
-                //{
-                //    // clear textCells
-                //    foreach (var textCell in suggestModel.TextCells)
-                //    {
-                //        textCell.NoteId = 0;
-                //        textCell.Similarity = 0.0;
-                //    }
-                //}
             }
 
             if (maxRate != ZERO_RATE)
@@ -145,14 +144,13 @@ namespace DigitizingNoteFs.Wpf.Services
                 parentNoteRs = ParentNoteData!.FirstOrDefault(x => x.FsNoteId == parentIdWithMaxRate);
                 if (parentNoteRs != null)
                 {
-                    suggestModel.TextCells = dctParentNote[parentIdWithMaxRate];
                     return Task.FromResult<FsNoteModel?>(parentNoteRs);
                 }
             }
 
             return Task.FromResult<FsNoteModel?>(parentNoteRs);
         }
-
+        [Obsolete]
         public FsNoteModel? SuggestParentNoteByClosestNumber(SuggestModel suggestModel)
         {
             const double _30M = 30_000_000;
