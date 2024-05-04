@@ -172,6 +172,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         public IRelayCommand OpenFileCommand { get; }
         public IRelayCommand PasteTextCommand { get; }
         public IRelayCommand OpenAbbyyScreenShotCommand { get; }
+        public IRelayCommand TestCommand { get; }
         #endregion
 
         #region Services
@@ -185,6 +186,17 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             OpenFileCommand = new RelayCommand(OpenFile);
             PasteTextCommand = new RelayCommand(GetDataFromClipboard);
             OpenAbbyyScreenShotCommand = new RelayCommand<object>(OpenAbbyyScreenShot);
+            TestCommand = new RelayCommand(() =>
+            {
+                // change random data of ParentNoteData
+                var random = new Random();
+                
+                foreach (var parent in ParentNoteData)
+                {
+                    parent.Value = random.Next(1000000, 10000000);
+                }
+
+            });
             GroupedData = new();
             ParentNoteData = new();
             debounceTimer = new Timer(DebounceTimerCallback, null, Timeout.Infinite, Timeout.Infinite);

@@ -1,4 +1,5 @@
 ﻿using DigitizingNoteFs.Core.Services;
+using DigitizingNoteFs.Wpf.Views;
 using Microsoft.Extensions.DependencyInjection;
 using System.Windows;
 
@@ -24,12 +25,13 @@ namespace DigitizingNoteFs.Wpf
                 throw new InvalidOperationException("Service provider is not initialized.");
             }
 
-            var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
+            var mainWindow = ServiceProvider.GetRequiredService<TestWindow>();
             mainWindow.Show();
         }
         private static void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<MainWindow>();
+            services.AddSingleton<TestWindow>();
             services.AddTransient<ExcelService>();
         }
     }

@@ -37,13 +37,13 @@
             <Rectangle HorizontalAlignment="Stretch" Fill="DarkGray" Width="1" Margin="2 5"/>
             <StackPanel Orientation="Horizontal">
                 <Label VerticalAlignment="Center">Thông tin:</Label>
+                <Button Content="Test" Padding="5 0 5 0" Height="24" Command="{Binding TestCommand}"></Button>
                 <TextBlock Text="{Binding SheetModel.StockCode}" VerticalAlignment="Center" Margin="5"></TextBlock>
                 <TextBlock Text="{Binding SheetModel.Year}" VerticalAlignment="Center" Margin="5"></TextBlock>
                 <TextBlock Text="{Binding SheetModel.ReportTerm}" VerticalAlignment="Center" Margin="5"></TextBlock>
                 <TextBlock Text="{Binding SheetModel.ReportType}" VerticalAlignment="Center" Margin="5"></TextBlock>
                 <TextBlock Text="{Binding SheetModel.AuditedStatus}" VerticalAlignment="Center" Margin="5"></TextBlock>
                 <TextBlock Text="{Binding SheetModel.IsAdjusted}" VerticalAlignment="Center" Margin="5"></TextBlock>
-
             </StackPanel>
         </StackPanel>
         <!-- Row 2 -->
@@ -72,7 +72,7 @@
                         <DataGridTextColumn Header="NoteID" Binding="{Binding FsNoteId}"/>
                         <DataGridTextColumn Header="Nhóm" Binding="{Binding Group}"/>
                         <DataGridTextColumn Header="Tên chỉ tiêu" Binding="{Binding Name}"/>
-                        <DataGridTextColumn Header="Giá trị gốc" Binding="{Binding Value, Converter={StaticResource DoubleToStringConverter}}">
+                        <DataGridTextColumn Header="Giá trị gốc" Binding="{Binding Value, Converter={StaticResource DoubleToStringConverter}, UpdateSourceTrigger=PropertyChanged}">
                         </DataGridTextColumn>
                         <DataGridTextColumn Header="Giá trị nhập"/>
                         <DataGridTextColumn Header="Hợp lệ"/>
@@ -101,14 +101,20 @@
                         <Grid Grid.Column="0">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"></RowDefinition>
+                                <RowDefinition Height="Auto"></RowDefinition>
                                 <RowDefinition Height="1*"></RowDefinition>
                             </Grid.RowDefinitions>
 
                             <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5 0 5 0">
                                 <Label FontWeight="Medium" FontSize="12" Content="Chỉ tiêu: " ></Label>
                                 <Label FontWeight="Medium" FontSize="12" Content="{Binding SuggestedFsNoteParent.Name, Converter={StaticResource NullToAlternativeValueConverter}, ConverterParameter='Không tìm thấy chỉ tiêu phù hợp'}" Foreground="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"></Label>
+                                <Label FontWeight="Medium" FontSize="12" Content="Nhóm: " ></Label>
+                                <ComboBox MinWidth="40"></ComboBox>
                             </StackPanel>
-                            <ScrollViewer Margin="0" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                            <!--<StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5 0 5 0">
+                                
+                            </StackPanel>-->
+                            <ScrollViewer Margin="0" Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                                 <DataGrid Name="dgDataSuggestedFsNoteChildren" ItemsSource="{Binding SuggestedFsNoteChildren}" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" Margin="5">
                                     <DataGrid.ColumnHeaderStyle>
                                         <Style TargetType="{x:Type DataGridColumnHeader}">
@@ -133,8 +139,8 @@
                             Name="txtInput" Grid.Row="1" Margin="5" BorderBrush="#92b6f0" AcceptsTab="True" AcceptsReturn="True" TextWrapping="Wrap">
                         </TextBox>
                         <StackPanel Grid.Column="2" Orientation="Vertical">
-                            <Button Command="{Binding PasteTextCommand}" Content="Dán" Width="60" Height="40" Margin="5" Cursor="Hand"></Button>
-                            <Button Command="{Binding OpenAbbyyScreenShotCommand}" Content="Quét" Width="60" Height="40" Margin="5" Cursor="Hand"/>
+                            <Button Style="{StaticResource ButtonDefault}" Command="{Binding PasteTextCommand}" Content="Dán" Width="60" Height="40" Margin="5" Cursor="Hand"></Button>
+                            <Button Style="{StaticResource ButtonDefault}" Command="{Binding OpenAbbyyScreenShotCommand}" Content="Quét" Width="60" Height="40" Margin="5" Cursor="Hand"/>
                         </StackPanel>
                     </Grid>
                     <Grid Grid.Row="1">
@@ -143,7 +149,6 @@
                             <ColumnDefinition Width="1*"></ColumnDefinition>
                         </Grid.ColumnDefinitions>
                         <ListView Grid.Column="1" Margin="5" ItemsSource="{Binding MoneyCells}">
-
                             <ListView.View>
                                 <GridView>
                                     <GridViewColumn Header="Số tiền" DisplayMemberBinding="{Binding Value, Converter={StaticResource DoubleToStringConverter}}" />

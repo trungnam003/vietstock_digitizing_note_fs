@@ -124,9 +124,12 @@ namespace DigitizingNoteFs.Wpf.Services
                         // Nếu maxSimilarity > THRESHOLD thì xác định đây là note con của parentNote
                         if (maxSimilarity >= THRESHOLD && maxSimilarity > textCell.Similarity)
                         {
+                            if (textCell.NoteId == 0)
+                            {
+                                countSimilarity++;
+                            }
                             textCell.NoteId = childNote.Id;
                             textCell.Similarity = maxSimilarity;
-                            countSimilarity++;
                         }
                     }
                 }
@@ -137,6 +140,13 @@ namespace DigitizingNoteFs.Wpf.Services
                     maxRate = rate;
                     parentIdWithMaxRate = parentNote.Key;
                 }
+
+                // clear textCells
+                cloneTextCells.ForEach(x =>
+                {
+                    x.NoteId = 0;
+                    x.Similarity = 0;
+                });
             }
 
             if (maxRate != ZERO_RATE)
