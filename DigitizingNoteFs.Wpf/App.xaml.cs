@@ -25,7 +25,7 @@ namespace DigitizingNoteFs.Wpf
                 throw new InvalidOperationException("Service provider is not initialized.");
             }
 
-            var mainWindow = ServiceProvider.GetRequiredService<TestWindow>();
+            var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
             mainWindow.Show();
         }
         private static void ConfigureServices(IServiceCollection services)

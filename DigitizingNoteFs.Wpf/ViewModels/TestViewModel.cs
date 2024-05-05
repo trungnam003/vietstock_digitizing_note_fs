@@ -1,18 +1,13 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace DigitizingNoteFs.Wpf.ViewModels
 {
     public partial class TestViewModel : ObservableObject
     {
-        private ObservableCollection<PersonViewModel> _people = []; 
+        private ObservableCollection<PersonViewModel> _people = [];
         public ObservableCollection<PersonViewModel> People
         {
             get => _people;
@@ -35,14 +30,14 @@ namespace DigitizingNoteFs.Wpf.ViewModels
 
         private async Task RandomUpdatePerson()
         {
-            while(true)
+            while (true)
             {
                 await Task.Delay(5);
                 var random = new Random();
                 var index = random.Next(0, People.Count);
                 var person = People[index];
                 person.Age = random.Next(20, 60);
-                person.IsModified = person.Age % 2 == 0;    
+                person.IsModified = person.Age % 2 == 0;
             }
         }
     }

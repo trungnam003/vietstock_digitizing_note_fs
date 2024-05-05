@@ -1,4 +1,4 @@
-﻿using DigitizingNoteFs.Core.Models;
+﻿using DigitizingNoteFs.Core.ViewModels;
 using DigitizingNoteFs.Wpf.ViewModels;
 using Force.DeepCloner;
 using System.Windows;
@@ -22,21 +22,18 @@ namespace DigitizingNoteFs.Wpf
         {
             if (sender is DataGridRow row)
             {
-                if (row.Item is not FsNoteModel note)
+                if (row.Item is not FsNoteParentViewModel note)
                 {
                     return;
                 }
-
-                var children = _viewModel.Data.Where(x => x.ParentId == note.FsNoteId && x.Group == note.Group).Select(x => x.DeepClone()).ToList();
-                _viewModel.SuggestedFsNoteChildren = new(children);
+                var children = note.Children.Select(x => x.DeepClone()).ToList();
                 _viewModel.SuggestedFsNoteParent = note;
             }
         }
 
         private void dgDataFsSheet_MouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            var cell = sender as DataGridCell;
-            if (cell != null)
+            if (sender is DataGridCell cell)
             {
                 cell.ContextMenu.IsOpen = true;
                 e.Handled = true;
@@ -46,16 +43,16 @@ namespace DigitizingNoteFs.Wpf
         private void MenuItem_Click(object sender, RoutedEventArgs e)
         {
             // copy cell value
-            var menuItem = sender as MenuItem;
-            if (menuItem != null)
+            if (sender is MenuItem menuItem)
             {
-                var cell = menuItem.DataContext as DataGridCell;
-                if (cell != null)
+                if (menuItem.DataContext is DataGridCell cell)
                 {
                     Clipboard.SetText(cell.Content.ToString());
                 }
             }
         }
+
+
     }
 
     public partial class MainWindow

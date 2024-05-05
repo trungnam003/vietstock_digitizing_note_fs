@@ -1,17 +1,15 @@
-﻿using CommunityToolkit.Mvvm.Collections;
-using DigitizingNoteFs.Core.Models;
+﻿using DigitizingNoteFs.Core.Models;
+using DigitizingNoteFs.Core.ViewModels;
 using DigitizingNoteFs.Shared.Utilities;
-using DigitizingNoteFs.Wpf.ViewModels;
 using Force.DeepCloner;
 using System.Collections.ObjectModel;
-using System.Windows.Input;
 
 namespace DigitizingNoteFs.Wpf.Services
 {
     public class SuggestServices
     {
-        
-        public ObservableCollection<FsNoteModel>? ParentNoteData { get; private set; }
+
+        public ObservableCollection<FsNoteParentViewModel>? ParentNoteData { get; private set; }
         public Dictionary<int, List<FsNoteMappingModel>>? Mapping { get; private set; }
         public HashSet<int>? MappingIgnore { get; private set; }
 
@@ -19,7 +17,7 @@ namespace DigitizingNoteFs.Wpf.Services
 
         public void InitSuggest(
 
-            ObservableCollection<FsNoteModel> parentNoteData,
+            ObservableCollection<FsNoteParentViewModel> parentNoteData,
             Dictionary<int, List<FsNoteMappingModel>> mapping,
             HashSet<int> mappingIgnore
 
@@ -31,7 +29,7 @@ namespace DigitizingNoteFs.Wpf.Services
             MappingIgnore = mappingIgnore;
 
         }
-        public FsNoteModel? SuggestParentNoteByTotal(SuggestModel suggestModel)
+        public FsNoteParentViewModel? SuggestParentNoteByTotal(SuggestModel suggestModel)
         {
             if (!Inintialized)
             {
@@ -69,12 +67,12 @@ namespace DigitizingNoteFs.Wpf.Services
         /// </summary>
         /// <param name="suggestModel"></param>
         /// <returns></returns>
-        public Task<FsNoteModel?> SuggestParentNoteByChildren(SuggestModel suggestModel)
+        public Task<FsNoteParentViewModel?> SuggestParentNoteByChildren(SuggestModel suggestModel)
         {
-            FsNoteModel? parentNoteRs = null;
+            FsNoteParentViewModel? parentNoteRs = null;
             const double THRESHOLD = 0.65;
 
-            if(!Inintialized)
+            if (!Inintialized)
             {
                 return Task.FromResult(parentNoteRs);
             }
@@ -154,14 +152,14 @@ namespace DigitizingNoteFs.Wpf.Services
                 parentNoteRs = ParentNoteData!.FirstOrDefault(x => x.FsNoteId == parentIdWithMaxRate);
                 if (parentNoteRs != null)
                 {
-                    return Task.FromResult<FsNoteModel?>(parentNoteRs);
+                    return Task.FromResult<FsNoteParentViewModel?>(parentNoteRs);
                 }
             }
 
-            return Task.FromResult<FsNoteModel?>(parentNoteRs);
+            return Task.FromResult(parentNoteRs);
         }
         [Obsolete]
-        public FsNoteModel? SuggestParentNoteByClosestNumber(SuggestModel suggestModel)
+        public FsNoteViewModel? SuggestParentNoteByClosestNumber(SuggestModel suggestModel)
         {
             const double _30M = 30_000_000;
             if (suggestModel.MoneyCells == null || suggestModel.MoneyCells.Count == 0 || suggestModel.Max == double.MinValue)

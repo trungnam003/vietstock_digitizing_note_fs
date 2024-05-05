@@ -1,21 +1,17 @@
-﻿
-using CommunityToolkit.Mvvm.Collections;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DigitizingNoteFs.Core.Common;
 using DigitizingNoteFs.Core.Models;
+using DigitizingNoteFs.Core.ViewModels;
 using DigitizingNoteFs.Shared.Utilities;
 using DigitizingNoteFs.Wpf.Services;
-using Force.DeepCloner;
 using Microsoft.Win32;
-using NPOI.HSSF.Record.CF;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using Match = System.Text.RegularExpressions.Match;
@@ -26,6 +22,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
     {
 
         #region Observable Properties
+
         private bool _isLoading;
         public bool IsLoading
         {
@@ -35,7 +32,8 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                 SetProperty(ref _isLoading, value);
             }
         }
-        private string _filePath;
+
+        private string _filePath = string.Empty;
         /// <summary>
         /// Đường dẫn file excel TMBCTC
         /// </summary>
@@ -48,7 +46,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             }
         }
 
-        private FsSheetModel? _fsSheet;
+        private FsSheetModel? _fsSheet = null;
         /// <summary>
         /// Danh sách sheet TM trong file excel
         /// </summary>
@@ -58,19 +56,6 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             set
             {
                 SetProperty(ref _fsSheet, value);
-            }
-        }
-
-        private ObservableCollection<FsNoteModel> _data;
-        /// <summary>
-        /// Dữ liệu TM trong sheet được chọn từ combobox
-        /// </summary>
-        public ObservableCollection<FsNoteModel> Data
-        {
-            get { return _data; }
-            set
-            {
-                SetProperty(ref _data, value);
             }
         }
 
@@ -88,24 +73,11 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             }
         }
 
-        private ObservableGroupedCollection<int, FsNoteModel> _groupedData;
-        /// <summary>
-        /// Danh sách ID chỉ tiêu TM cha chứa TM con
-        /// </summary>
-        public ObservableGroupedCollection<int, FsNoteModel> GroupedData
-        {
-            get { return _groupedData; }
-            set
-            {
-                SetProperty(ref _groupedData, value);
-            }
-        }
-
-        private ObservableCollection<FsNoteModel> _parentNoteData;
+        private ObservableCollection<FsNoteParentViewModel> _parentNoteData;
         /// <summary>
         /// Danh sách chỉ tiêu TM cha và dữ liệu
         /// </summary>
-        public ObservableCollection<FsNoteModel> ParentNoteData
+        public ObservableCollection<FsNoteParentViewModel> ParentNoteData
         {
             get { return _parentNoteData; }
             set
@@ -126,23 +98,13 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             }
         }
 
-        private FsNoteModel? _suggestedFsNoteParent;
-        public FsNoteModel? SuggestedFsNoteParent
+        private FsNoteParentViewModel? _suggestedFsNoteParent;
+        public FsNoteParentViewModel? SuggestedFsNoteParent
         {
             get { return _suggestedFsNoteParent; }
             set
             {
                 SetProperty(ref _suggestedFsNoteParent, value);
-            }
-        }
-
-        private ObservableCollection<FsNoteModel> _suggestedFsNoteChildren;
-        public ObservableCollection<FsNoteModel> SuggestedFsNoteChildren
-        {
-            get { return _suggestedFsNoteChildren; }
-            set
-            {
-                SetProperty(ref _suggestedFsNoteChildren, value);
             }
         }
 
@@ -156,16 +118,29 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             }
         }
 
+
+
+        private bool _isAutoMapping;
+        public bool IsAutoMapping
+        {
+            get { return _isAutoMapping; }
+            set
+            {
+                SetProperty(ref _isAutoMapping, value);
+            }
+        }
         #endregion
 
         #region Properties
-
+        public List<ComboBoxPairs> ChildrentNoteSuggests { get; set; } = [];
         public List<ComboBoxPairs> SheetNames { get; set; }
         public Dictionary<int, List<FsNoteMappingModel>> Mapping { get; set; } = [];
         public HashSet<int> MappingIgnore { get; set; } = [];
+        public List<FsNoteModel> ParentNotes { get; set; }
 
         private HSSFWorkbook? _workbook = null;
-        private Timer debounceTimer;
+
+        private readonly Timer debounceTimer;
         #endregion
 
         #region Commands
@@ -181,28 +156,31 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         #region Constructors
         public MainWindowViewModel()
         {
-            SheetNames = new List<ComboBoxPairs>();
-            Data = new ObservableCollection<FsNoteModel>();
+            SheetNames = [];
+            ParentNoteData = [];
             OpenFileCommand = new RelayCommand(OpenFile);
             PasteTextCommand = new RelayCommand(GetDataFromClipboard);
             OpenAbbyyScreenShotCommand = new RelayCommand<object>(OpenAbbyyScreenShot);
             TestCommand = new RelayCommand(() =>
             {
                 // change random data of ParentNoteData
-                var random = new Random();
-                
-                foreach (var parent in ParentNoteData)
-                {
-                    parent.Value = random.Next(1000000, 10000000);
-                }
+                //var random = new Random();
+
+                //foreach (var parent in ParentNoteData)
+                //{
+                //    parent.Value = random.Next(1000000, 10000000);
+                //}
 
             });
-            GroupedData = new();
-            ParentNoteData = new();
             debounceTimer = new Timer(DebounceTimerCallback, null, Timeout.Infinite, Timeout.Infinite);
         }
         #endregion
 
+
+    }
+
+    internal partial class MainWindowViewModel
+    {
         #region Methods
 
         private void OpenAbbyyScreenShot(object? obj)
@@ -228,6 +206,26 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             }
             InputText = clipboardText;
         }
+
+        private static bool IsValidCell(IRow row, int colName, int colNoteId)
+        {
+            if (row == null)
+            {
+                return false;
+            }
+
+            string? name = row.GetCell(colName).ToString();
+            // kiểm tra nếu ô màu đỏ thì bỏ qua
+            var cellColor = row.GetCell(colName).CellStyle.FillForegroundColorColor;
+            Color colorTarget = Color.FromArgb(cellColor.RGB[0], cellColor.RGB[1], cellColor.RGB[2]);
+
+            bool validName = !string.IsNullOrEmpty(name);
+            bool validNoteId = int.TryParse(row.GetCell(colNoteId).ToString(), out int noteId) && noteId != 0;
+            bool validColor = !CoreUtils.IsColorInRangeRed(colorTarget);
+
+            return validName && validNoteId && validColor;
+        }
+
         /// <summary>
         /// Đọc dữ liệu từ sheet TM được chọn và gán data vào các thuộc tính
         /// </summary>
@@ -237,7 +235,6 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             if (string.IsNullOrEmpty(sheetName))
                 return;
 
-            Data.Clear();
             ParentNoteData.Clear();
 
             if (_workbook == null)
@@ -258,6 +255,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
 
             int currentParentId = 0;
             Dictionary<int, int> countGroup = [];
+            FsNoteParentViewModel? currentParent = null;
             for (int i = START_ROW_INDEX; i <= sheet.LastRowNum; i++)
             {
                 try
@@ -267,22 +265,12 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                     {
                         continue;
                     }
-                    var model = new FsNoteModel();
-                    string? name = row.GetCell(COL_NOTE_NAME).ToString();
-                    // kiểm tra nếu ô màu đỏ thì bỏ qua
-                    var cellColor = row.GetCell(COL_NOTE_NAME).CellStyle.FillForegroundColorColor;
-                    Color colorTarget = Color.FromArgb(cellColor.RGB[0], cellColor.RGB[1], cellColor.RGB[2]);
-
-                    bool inValidName = string.IsNullOrEmpty(name);
-                    bool inValidNoteId = !int.TryParse(row.GetCell(COL_NOTE_ID).ToString(), out int noteId) && noteId == 0;
-                    bool inValidColor = CoreUtils.IsColorInRangeRed(colorTarget);
-
-                    if (inValidNoteId || inValidName || inValidColor)
+                    if (!IsValidCell(row, COL_NOTE_NAME, COL_NOTE_ID))
                     {
                         continue;
                     }
-                    model.FsNoteId = noteId;
-                    model.Name = name;
+                    int noteId = (int)row.GetCell(COL_NOTE_ID).NumericCellValue;
+                    string name = row.GetCell(COL_NOTE_NAME).ToString()!;
 
                     var cellCheckParent = row.GetCell(COL_CHECK_PARENT_NOTE);
 
@@ -291,29 +279,23 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                         continue;
                     }
 
-                    if (string.IsNullOrEmpty(cellCheckParent.ToString()))
-                    {
-                        var cellValue = row.GetCell(COL_NOTE_VALUE);
-                        if (cellValue.CellType == CellType.Formula)
-                        {
-                            continue;
-                        }
-                        model.IsParent = false;
-                        model.ParentId = currentParentId;
-                        model.Cell = new(i, COL_NOTE_VALUE);
-                        model.CellAddress = $"{(char)('A' + COL_NOTE_VALUE)}{i}";
-                        model.Group = countGroup.TryGetValue(currentParentId, out int group) ? group : 0;
-                        Data.Add(model);
-                    }
-                    else
+                    if (!string.IsNullOrEmpty(cellCheckParent.ToString()))
                     {
                         if (!Mapping.ContainsKey(noteId))
                         {
                             continue;
                         }
-
-                        model.IsParent = true;
-                        model.ParentId = 0;
+                        currentParent = new FsNoteParentViewModel
+                        {
+                            FsNoteId = noteId,
+                            Name = name,
+                            IsParent = true,
+                            ParentId = 0,
+                            Group = 0,
+                            Cell = new(i, COL_NOTE_VALUE),
+                            CellAddress = $"{(char)('A' + COL_NOTE_VALUE)}{i}",
+                            Children = []
+                        };
                         currentParentId = noteId;
                         if (countGroup.TryGetValue(currentParentId, out int value))
                         {
@@ -326,17 +308,34 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                         var cellParentValue = row.GetCell(COL_NOTE_PARENT_VALUE);
                         if (cellParentValue == null)
                         {
-                            model.Value = 0;
+                            currentParent.Value = 0;
                         }
                         else
                         {
-                            model.Value = cellParentValue.NumericCellValue;
+                            currentParent.Value = cellParentValue.NumericCellValue;
                         }
-                        model.Group = countGroup.TryGetValue(currentParentId, out int group) ? group : 0;
-                        ParentNoteData.Add(model);
-                       
+                        currentParent.Group = countGroup.TryGetValue(currentParentId, out int group) ? group : 0;
+                        ParentNoteData.Add(currentParent);
                     }
-
+                    else
+                    {
+                        var cellValue = row.GetCell(COL_NOTE_VALUE);
+                        if (cellValue.CellType == CellType.Formula)
+                        {
+                            continue;
+                        }
+                        var model = new FsNoteViewModel
+                        {
+                            FsNoteId = noteId,
+                            Name = name,
+                            IsParent = false,
+                            ParentId = currentParentId,
+                            Cell = new(i, COL_NOTE_VALUE),
+                            CellAddress = $"{(char)('A' + COL_NOTE_VALUE)}{i}",
+                            Group = countGroup.TryGetValue(currentParentId, out int group) ? group : 0
+                        };
+                        currentParent?.Children.Add(model);
+                    }
                 }
                 catch (Exception)
                 {
@@ -344,7 +343,6 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                 }
             }
 
-            var d = Data;
             //GroupedData.Clear();
             //GroupedData = new(Data.Where(x => x.ParentId != 0).GroupBy(x => x.ParentId));
         }
@@ -495,7 +493,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                         {
                             model.IsOther = true;
                         }
-                        else if(rawKeyword.Equals(IGNORE_CHILD_FORMULA_KEY))
+                        else if (rawKeyword.Equals(IGNORE_CHILD_FORMULA_KEY))
                         {
                             model.IsFormula = true;
                         }
@@ -505,7 +503,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                             model.Keywords = keywords.Select(x => x.Trim()).ToList();
                         }
                     }
-                    
+
                     model.ParentId = currentParentId;
                     model.Group = countGroup.TryGetValue(currentParentId, out int group) ? group : 0;
                     Mapping[currentParentId].Add(model);
@@ -527,7 +525,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         {
             Application.Current.Dispatcher.Invoke(async () =>
             {
-                if(string.IsNullOrWhiteSpace(InputText))
+                if (string.IsNullOrWhiteSpace(InputText))
                 {
                     return;
                 }
@@ -581,12 +579,15 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                 MoneyCells = moneyList
             };
             var suggested = await GetParentNoteSuggestions(suggestModel);
-            SuggestedFsNoteParent = suggested;
+            // cân nhắc khi sử dụng
 
             if (suggested != null)
             {
+                SuggestedFsNoteParent = ParentNoteData.Where(x => x.FsNoteId == suggested?.FsNoteId).FirstOrDefault();
                 var count = TryIdentifyChidrenNoteWithText(ref suggestModel, suggested);
-                var children = Data.Where(x => x.ParentId == suggested.FsNoteId).Select(x => x.DeepClone()).ToList();
+                var children = SuggestedFsNoteParent!.Children;
+
+                ChildrentNoteSuggests = children.Select(x => new ComboBoxPairs(x.FsNoteId.ToString(), x.Name!)).ToList();
 
                 if (count > 0)
                 {
@@ -599,20 +600,31 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                             continue;
                         }
                         var noteId = moneyCell.Note.NoteId;
-                        var child = children.FirstOrDefault(x => x.FsNoteId == noteId);
+                        var child = children?.FirstOrDefault(x => x.FsNoteId == noteId);
                         if (child != null)
                         {
                             child.Value = moneyCell.Value;
                         }
                     }
                 }
-                SuggestedFsNoteChildren = new(children);
+                // loop and set selected parent note
+                foreach (var parent in ParentNoteData)
+                {
+                    if (parent.FsNoteId == suggested.FsNoteId)
+                    {
+                        parent.IsSelected = true;
+                    }
+                }
             }
             else
             {
-                SuggestedFsNoteChildren = [];
-            }
+                // loop and set selected parent note
+                foreach (var parent in ParentNoteData)
+                {
+                    parent.IsSelected = false;
+                }
 
+            }
             // map money
             MoneyCells = new(moneyList);
         }
@@ -656,13 +668,13 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             }
         }
 
-        private async Task<FsNoteModel?> GetParentNoteSuggestions(SuggestModel suggestModel)
+        private async Task<FsNoteParentViewModel?> GetParentNoteSuggestions(SuggestModel suggestModel)
         {
             var services = new SuggestServices();
 
             services.InitSuggest(ParentNoteData, Mapping, MappingIgnore);
 
-            var parentSuggest1 = services.SuggestParentNoteByTotal(suggestModel); 
+            var parentSuggest1 = services.SuggestParentNoteByTotal(suggestModel);
             if (parentSuggest1 == null)
             {
                 var parentSuggest3 = await services.SuggestParentNoteByChildren(suggestModel);
@@ -682,7 +694,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         /// Xác định các ô chứa dữ liệu text phù hợp với các TM nào
         /// </summary>
         /// <param name="suggestModel"></param>
-        private int TryIdentifyChidrenNoteWithText(ref SuggestModel suggestModel, FsNoteModel suggested)
+        private int TryIdentifyChidrenNoteWithText(ref SuggestModel suggestModel, FsNoteViewModel suggested)
         {
             if (suggestModel.TextCells == null || suggestModel.TextCells.Count == 0)
                 return 0;
@@ -747,7 +759,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                     //    continue;
                     //}
                     var distance = CoreUtils.EuclideanDistance(textCell.Row, textCell.Col, moneyCell.Row, moneyCell.Col);
-                    
+
                     if (distance < minDistance && distance < THRESHOLD)
                     {
                         minDistance = distance;
@@ -755,7 +767,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                     }
                 }
 
-                if(minDistance != double.MaxValue && moneyCell2 != null)
+                if (minDistance != double.MaxValue && moneyCell2 != null)
                 {
                     string coordinate = $"{moneyCell2.Row}-{moneyCell2.Col}";
                     if (coordinateMoneyDistance.TryGetValue(coordinate, out double value))
@@ -787,11 +799,5 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         }
         #endregion
     }
-    public class SuggestModel
-    {
-        public double Sum { get; set; }
-        public double Max { get; set; }
-        public List<TextCell>? TextCells { get; set; }
-        public List<MoneyCell>? MoneyCells { get; set; }
-    }
+
 }
