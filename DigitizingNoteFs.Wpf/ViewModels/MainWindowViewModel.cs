@@ -5,10 +5,12 @@ using DigitizingNoteFs.Core.Models;
 using DigitizingNoteFs.Core.ViewModels;
 using DigitizingNoteFs.Shared.Utilities;
 using DigitizingNoteFs.Wpf.Services;
+using Force.DeepCloner;
 using Microsoft.Win32;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -606,7 +608,16 @@ namespace DigitizingNoteFs.Wpf.ViewModels
 
             if (suggested != null)
             {
-                SuggestedFsNoteParent = ParentNoteData.Where(x => x.FsNoteId == suggested?.FsNoteId).FirstOrDefault();
+                var parent =  ParentNoteData.Where(x => x.FsNoteId == suggested?.FsNoteId).FirstOrDefault();
+
+                if(parent == null)
+                {
+                    return;
+                }
+
+                SuggestedFsNoteParent = parent.ShallowClone();
+                parent.Children = parent.Children.Select(x => x.ShallowClone()).ToList();
+
                 var count = TryIdentifyChidrenNoteWithText(ref suggestModel, suggested);
                 var children = SuggestedFsNoteParent!.Children;
 
@@ -631,11 +642,11 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                     }
                 }
                 // loop and set selected parent note
-                foreach (var parent in ParentNoteData)
+                foreach (var item in ParentNoteData)
                 {
-                    if (parent.FsNoteId == suggested.FsNoteId)
+                    if (item.FsNoteId == suggested.FsNoteId)
                     {
-                        parent.IsSelected = true;
+                        item.IsSelected = true;
                     }
                 }
             }
@@ -659,15 +670,29 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                     NoteId = money.Note?.NoteId ?? 0,
                     NoteFsChildren = new(ChildrentNoteSuggests.Select(x => new ComboBoxPairs(x.Key, x.Value)).ToList()),
                 };
+                vm.SelectedNoteFsChildChanged +=
+                    (object? sender, EventArgs e) =>
+                    {
+                        if(sender is MoneyMappingViewModel vm2)
+                        {
+                            int noteId = int.Parse(vm2.SelectedNoteFsChild?.Key ?? "0");
+                            var child = SuggestedFsNoteParent?.Children.Where(x => x.FsNoteId == noteId).FirstOrDefault();
+                            if (child != null)
+                            {
+                                child.Value += vm2.Value;
+                            }
+                        }
+                    };
 
+                vm.SelectedNoteFsChildChanging += Vm_SelectedNoteFsChildChanging;
                 MoneyMappingData.Add(vm);
             }
 
             var d = MoneyMappingData;
-            // fix tạm lỗi binding 2 lần, chưa biết nguyên nhân
+
             await Task.Run(async () =>
             {
-                // đợi 100 ms để hoàn tất binding
+                // wait for 100ms to UI update
                 await Task.Delay(100);
 
                 foreach (var item in MoneyMappingData)
@@ -675,9 +700,24 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                     item.SelectedNoteFsChild = item.NoteFsChildren.Where(y => y.Key == item.NoteId.ToString()).FirstOrDefault();
                 }
             });
+
         }
+
+        private void Vm_SelectedNoteFsChildChanging(object? sender, EventArgs e)
+        {
+            if (sender is MoneyMappingViewModel vm)
+            {
+                var noteId = int.Parse(vm.SelectedNoteFsChild?.Key ?? "0");
+                var child = SuggestedFsNoteParent?.Children.Where(x => x.FsNoteId == noteId).FirstOrDefault();
+                if (child != null)
+                {
+                    child.Value -= vm.Value;
+                }
+            }
+        }
+
         /// <summary>
-        /// Lấy dữ liệu tiền từ ô trong ma trận và xóa dữ liệu tiền khỏi ô
+        /// Get data money using Regex from cell and remove money from cell
         /// </summary>
         /// <param name="iRow"></param>
         /// <param name="iCol"></param>
