@@ -20,7 +20,6 @@ namespace DigitizingNoteFs.Wpf.ViewModels
 {
     internal partial class MainWindowViewModel : ObservableObject
     {
-
         #region Observable Properties
 
         private bool _isLoading;
@@ -69,7 +68,14 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             set
             {
                 SetProperty(ref _selectedSheet, value);
-                LoadDataFromSheet(_selectedSheet.Value);
+                if (_selectedSheet != null)
+                {
+                    LoadDataFromSheet(_selectedSheet.Value);
+                }
+                else
+                {
+                    ParentNoteData.Clear();
+                }
             }
         }
 
@@ -118,8 +124,6 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             }
         }
 
-
-
         private bool _isAutoMapping;
         public bool IsAutoMapping
         {
@@ -129,11 +133,29 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                 SetProperty(ref _isAutoMapping, value);
             }
         }
+
+        [ObservableProperty]
+        private ObservableCollection<MoneyMappingViewModel> moneyMappingData = [];
+
+        partial void OnMoneyMappingDataChanged(ObservableCollection<MoneyMappingViewModel> value)
+        {
+
+        }
+
+        public ObservableCollection<ComboBoxPairs> _sheetNames;
+        public ObservableCollection<ComboBoxPairs> SheetNames
+        {
+            get { return _sheetNames; }
+            set
+            {
+                SetProperty(ref _sheetNames, value);
+            }
+        }
+
         #endregion
 
         #region Properties
         public List<ComboBoxPairs> ChildrentNoteSuggests { get; set; } = [];
-        public List<ComboBoxPairs> SheetNames { get; set; }
         public Dictionary<int, List<FsNoteMappingModel>> Mapping { get; set; } = [];
         public HashSet<int> MappingIgnore { get; set; } = [];
         public List<FsNoteModel> ParentNotes { get; set; }
@@ -163,19 +185,15 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             OpenAbbyyScreenShotCommand = new RelayCommand<object>(OpenAbbyyScreenShot);
             TestCommand = new RelayCommand(() =>
             {
-                // change random data of ParentNoteData
-                //var random = new Random();
-
-                //foreach (var parent in ParentNoteData)
-                //{
-                //    parent.Value = random.Next(1000000, 10000000);
-                //}
-
+                var d = MoneyMappingData;
+                foreach (var item in MoneyMappingData)
+                {
+                    item.SelectedNoteFsChild = item.NoteFsChildren.Last();
+                }
             });
             debounceTimer = new Timer(DebounceTimerCallback, null, Timeout.Infinite, Timeout.Infinite);
         }
         #endregion
-
 
     }
 
@@ -209,6 +227,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
 
         private static bool IsValidCell(IRow row, int colName, int colNoteId)
         {
+
             if (row == null)
             {
                 return false;
@@ -369,8 +388,8 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                     FilePath = openFileDialog.FileName;
                     using var file = new FileStream(FilePath, FileMode.Open, FileAccess.Read);
                     _workbook = new HSSFWorkbook(file);
-                    LoadSheetNames();
                     LoadMappingData();
+                    LoadSheetNames();
                     file.Close();
                 }
             }
@@ -403,6 +422,10 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                             SheetNames.Add(new(sheet.SheetName, sheet.SheetName));
                         }
                     }
+                }
+                if (SheetNames.Count > 0)
+                {
+                    SelectedSheet = SheetNames[0];
                 }
             }
             catch (IOException ex)
@@ -627,6 +650,31 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             }
             // map money
             MoneyCells = new(moneyList);
+            MoneyMappingData.Clear();
+            foreach (var money in moneyList)
+            {
+                var vm = new MoneyMappingViewModel
+                {
+                    Value = money.Value,
+                    NoteId = money.Note?.NoteId ?? 0,
+                    NoteFsChildren = new(ChildrentNoteSuggests.Select(x => new ComboBoxPairs(x.Key, x.Value)).ToList()),
+                };
+
+                MoneyMappingData.Add(vm);
+            }
+
+            var d = MoneyMappingData;
+            // fix tạm lỗi binding 2 lần, chưa biết nguyên nhân
+            await Task.Run(async () =>
+            {
+                // đợi 100 ms để hoàn tất binding
+                await Task.Delay(100);
+
+                foreach (var item in MoneyMappingData)
+                {
+                    item.SelectedNoteFsChild = item.NoteFsChildren.Where(y => y.Key == item.NoteId.ToString()).FirstOrDefault();
+                }
+            });
         }
         /// <summary>
         /// Lấy dữ liệu tiền từ ô trong ma trận và xóa dữ liệu tiền khỏi ô
@@ -799,5 +847,4 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         }
         #endregion
     }
-
 }

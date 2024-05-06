@@ -1,44 +1,65 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DigitizingNoteFs.Core.Common;
+using DigitizingNoteFs.Core.ViewModels;
 using System.Collections.ObjectModel;
-using System.Windows;
 
 namespace DigitizingNoteFs.Wpf.ViewModels
 {
     public partial class TestViewModel : ObservableObject
     {
-        private ObservableCollection<PersonViewModel> _people = [];
-        public ObservableCollection<PersonViewModel> People
+        [ObservableProperty]
+        private ObservableCollection<MoneyMappingViewModel> moneyMappingData = [];
+
+        partial void OnMoneyMappingDataChanged(ObservableCollection<MoneyMappingViewModel>? oldValue, ObservableCollection<MoneyMappingViewModel> newValue)
         {
-            get => _people;
-            set => SetProperty(ref _people, value);
+
         }
 
-        public IRelayCommand UpdateOnePersonCommand { get; set; }
-
+        public IRelayCommand TestCommand { get; }
 
         public TestViewModel()
         {
-            People = new ObservableCollection<PersonViewModel>(Enumerable.Range(0, 100).Select(i => new PersonViewModel { Name = $"Person {i}", Age = 20 + i }).ToList());
-            UpdateOnePersonCommand = new RelayCommand(() =>
-            {
-                MessageBox.Show("Update one person");
-            });
-            // run background task to update person
-            _ = RandomUpdatePerson();
+            TestCommand = new RelayCommand(OnTestCommand);
         }
 
-        private async Task RandomUpdatePerson()
+        private void OnTestCommand()
         {
-            while (true)
-            {
-                await Task.Delay(5);
-                var random = new Random();
-                var index = random.Next(0, People.Count);
-                var person = People[index];
-                person.Age = random.Next(20, 60);
-                person.IsModified = person.Age % 2 == 0;
-            }
+            var lst = new List<ComboBoxPairs>();
+            lst.Add(new ComboBoxPairs("1", "1"));
+            lst.Add(new ComboBoxPairs("2", "2"));
+            lst.Add(new ComboBoxPairs("3", "3"));
+            lst.Add(new ComboBoxPairs("4", "4"));
+
+            MoneyMappingData.Clear();
+
+            var model = new MoneyMappingViewModel();
+            model.Value = 100;
+            model.NoteId = 10;
+            model.NoteFsChildren = new(lst.Select(x => new ComboBoxPairs(x.Key, x.Value)).ToList());
+            model.SelectedNoteFsChild = model.NoteFsChildren.FirstOrDefault();
+            MoneyMappingData.Add(model);
+
+            model = new MoneyMappingViewModel();
+            model.Value = 200;
+            model.NoteId = 20;
+            model.NoteFsChildren = new(lst.Select(x => new ComboBoxPairs(x.Key, x.Value)).ToList());
+            model.SelectedNoteFsChild = model.NoteFsChildren.FirstOrDefault();
+
+            MoneyMappingData.Add(model);
+
+            //Task.Run(async () =>
+            //{
+            //    // sleep for 2 seconds
+            //    await Task.Delay(100);
+            //    foreach (var item in moneyMappingData)
+            //    {
+            //        // random SelectedNoteFsChild
+            //        item.SelectedNoteFsChild = item.NoteFsChildren[new Random().Next(0, item.NoteFsChildren.Count)];
+
+            //    }
+            //});
+
         }
     }
 }
