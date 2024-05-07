@@ -24,7 +24,6 @@ namespace DigitizingNoteFs.Core.ViewModels
         public MoneyMappingViewModel()
         {
             NoteFsChildren = [];
-
         }
     }
 
@@ -34,21 +33,18 @@ namespace DigitizingNoteFs.Core.ViewModels
 
         partial void OnSelectedNoteFsChildChanging(ComboBoxPairs? oldValue, ComboBoxPairs? newValue)
         {
-            if(oldValue == null)
-            {
-                return;
-            }
-            SelectedNoteFsChildChanging?.Invoke(this, EventArgs.Empty);
-
+            var args = new MoneyMappingEventArgs(oldValue, newValue);
+            SelectedNoteFsChildChanging?.Invoke(this, args);
         }
 
         partial void OnSelectedNoteFsChildChanged(ComboBoxPairs? oldValue, ComboBoxPairs? newValue)
         {
-            if (oldValue == null)
+            if (newValue != null)
             {
-                return;
+                NoteId = int.TryParse(newValue.Key, out var id) ? id : 0;
             }
-            SelectedNoteFsChildChanged?.Invoke(this, EventArgs.Empty);
+            var args = new MoneyMappingEventArgs(oldValue, newValue);
+            SelectedNoteFsChildChanged?.Invoke(this, args);
         }
 
         #endregion
@@ -57,5 +53,16 @@ namespace DigitizingNoteFs.Core.ViewModels
         public event EventHandler? SelectedNoteFsChildChanging;
     }
 
+    public class MoneyMappingEventArgs : EventArgs
+    {
+        public MoneyMappingEventArgs(object? oldValue, object? newValue)
+        {
+            OldValue = oldValue;
+            NewValue = newValue;
+        }
+
+        public object? OldValue { get; }
+        public object? NewValue { get; }
+    }
 
 }

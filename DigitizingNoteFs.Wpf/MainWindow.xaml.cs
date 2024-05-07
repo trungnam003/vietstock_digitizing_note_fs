@@ -26,8 +26,8 @@ namespace DigitizingNoteFs.Wpf
                 {
                     return;
                 }
-                var children = note.Children.Select(x => x.DeepClone()).ToList();
-                _viewModel.SuggestedFsNoteParent = note;
+                _viewModel.ChangeSuggestFsNoteParent(note);
+               
             }
         }
 
