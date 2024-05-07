@@ -10,7 +10,6 @@ using Microsoft.Win32;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -24,136 +23,55 @@ namespace DigitizingNoteFs.Wpf.ViewModels
     {
         #region Observable Properties
 
+        [ObservableProperty]
         private bool _isLoading;
-        public bool IsLoading
-        {
-            get { return _isLoading; }
-            set
-            {
-                SetProperty(ref _isLoading, value);
-            }
-        }
 
+        [ObservableProperty]
         private string _filePath = string.Empty;
-        /// <summary>
-        /// Đường dẫn file excel TMBCTC
-        /// </summary>
-        public string FilePath
-        {
-            get { return _filePath; }
-            set
-            {
-                SetProperty(ref _filePath, value);
-            }
-        }
 
+        [ObservableProperty]
         private FsSheetModel? _fsSheet = null;
-        /// <summary>
-        /// Danh sách sheet TM trong file excel
-        /// </summary>
-        public FsSheetModel? SheetModel
+
+        [ObservableProperty]
+        private ComboBoxPairs? _selectedSheet;
+
+        partial void OnSelectedSheetChanged(ComboBoxPairs? value)
         {
-            get => _fsSheet;
-            set
+            if (value != null)
             {
-                SetProperty(ref _fsSheet, value);
+
+                LoadDataFromSheet(value.Value);
+            }
+            else
+            {
+                ParentNoteData.Clear();
             }
         }
-
-        private ComboBoxPairs _selectedSheet;
-        /// <summary>
-        /// Sheet được chọn từ combobox
-        /// </summary>
-        public ComboBoxPairs SelectedSheet
-        {
-            get { return _selectedSheet; }
-            set
-            {
-                SetProperty(ref _selectedSheet, value);
-                if (_selectedSheet != null)
-                {
-                    
-                    LoadDataFromSheet(_selectedSheet.Value);
-                }
-                else
-                {
-                    ParentNoteData.Clear();
-                }
-            }
-        }
-
+        [ObservableProperty]
         private ObservableCollection<FsNoteParentViewModel> _parentNoteData;
-        /// <summary>
-        /// Danh sách chỉ tiêu TM cha và dữ liệu
-        /// </summary>
-        public ObservableCollection<FsNoteParentViewModel> ParentNoteData
-        {
-            get { return _parentNoteData; }
-            set
-            {
-                SetProperty(ref _parentNoteData, value);
-            }
-        }
 
+        [ObservableProperty]
         private string _inputText;
-        public string InputText
+
+        partial void OnInputTextChanged(string value)
         {
-            get { return _inputText; }
-            set
-            {
-                _inputText = value;
-                OnPropertyChanged(nameof(InputText));
-                StartDebounceTimer();
-            }
+            StartDebounceTimer();
         }
 
+        [ObservableProperty]
         private FsNoteParentViewModel? _suggestedFsNoteParent;
-        public FsNoteParentViewModel? SuggestedFsNoteParent
-        {
-            get { return _suggestedFsNoteParent; }
-            set
-            {
-                SetProperty(ref _suggestedFsNoteParent, value);
-            }
-        }
 
+        [ObservableProperty]
         private ObservableCollection<MoneyCell>? moneyCells;
-        public ObservableCollection<MoneyCell>? MoneyCells
-        {
-            get { return moneyCells; }
-            set
-            {
-                SetProperty(ref moneyCells, value);
-            }
-        }
 
+        [ObservableProperty]
         private bool _isAutoMapping;
-        public bool IsAutoMapping
-        {
-            get { return _isAutoMapping; }
-            set
-            {
-                SetProperty(ref _isAutoMapping, value);
-            }
-        }
 
         [ObservableProperty]
         private ObservableCollection<MoneyMappingViewModel> moneyMappingData = [];
 
-        partial void OnMoneyMappingDataChanged(ObservableCollection<MoneyMappingViewModel> value)
-        {
-
-        }
-
+        [ObservableProperty]
         public ObservableCollection<ComboBoxPairs> _sheetNames;
-        public ObservableCollection<ComboBoxPairs> SheetNames
-        {
-            get { return _sheetNames; }
-            set
-            {
-                SetProperty(ref _sheetNames, value);
-            }
-        }
 
         #endregion
 
@@ -167,22 +85,15 @@ namespace DigitizingNoteFs.Wpf.ViewModels
 
         private readonly Timer debounceTimer;
 
-        private Dictionary<string, ObservableCollection<FsNoteParentViewModel>> _sheetData = new();
-
         #endregion
 
         #region Commands
-        public IRelayCommand OpenFileCommand { get; }
-        public IRelayCommand PasteTextCommand { get; }
-        public IRelayCommand OpenAbbyyScreenShotCommand { get; }
-        public IRelayCommand TestCommand { get; }
-
         [RelayCommand]
         private void UpdateFsNoteParent()
         {
             try
             {
-                if(SuggestedFsNoteParent == null)
+                if (SuggestedFsNoteParent == null)
                 {
                     MessageBox.Show("Không hợp lệ");
                     return;
@@ -232,7 +143,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
 
                 var firstParent = ParentNoteData.FirstOrDefault();
 
-                foreach(var child in firstParent!.Children)
+                foreach (var child in firstParent!.Children)
                 {
                     var rowIndex = child.Cell.Item1;
                     var colIndex = child.Cell.Item2;
@@ -273,38 +184,62 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             }
 
         }
-        #endregion
 
-        #region Services
-        #endregion
-
-        #region Constructors
-        public MainWindowViewModel()
+        [RelayCommand]
+        private void OpenFile()
         {
-            SheetNames = [];
-            ParentNoteData = [];
-            OpenFileCommand = new RelayCommand(OpenFile);
-            PasteTextCommand = new RelayCommand(GetDataFromClipboard);
-            OpenAbbyyScreenShotCommand = new RelayCommand<object>(OpenAbbyyScreenShot);
-            TestCommand = new RelayCommand(() =>
+            try
             {
-                var d = MoneyMappingData;
-                foreach (var item in MoneyMappingData)
+                var openFileDialog = new OpenFileDialog
                 {
-                    item.SelectedNoteFsChild = item.NoteFsChildren.Last();
+                    Title = "Chọn file import thuyết minh",
+                    CheckFileExists = true,
+                    CheckPathExists = true,
+                    DefaultExt = "xls",
+                    Filter = "xls files (*.xls)|*.xls",
+                    FilterIndex = 2,
+                    RestoreDirectory = true,
+                    ReadOnlyChecked = true,
+                    ShowReadOnly = true
+                };
+
+                if (openFileDialog.ShowDialog() == true)
+                {
+                    IsLoading = true;
+                    FilePath = openFileDialog.FileName;
+                    using var file = new FileStream(FilePath, FileMode.Open, FileAccess.Read);
+                    _workbook = new HSSFWorkbook(file);
+                    LoadMappingData();
+                    LoadSheetNames();
+                    file.Close();
                 }
-            });
-            debounceTimer = new Timer(DebounceTimerCallback, null, Timeout.Infinite, Timeout.Infinite);
-            IsAutoMapping = true;
+            }
+            catch (IOException ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
-        #endregion
 
-    }
+        [RelayCommand]
+        private void PasteText()
+        {
+            var clipboardText = Clipboard.GetText();
+            if (string.IsNullOrEmpty(clipboardText))
+            {
+                return;
+            }
+            InputText = clipboardText;
+        }
 
-    internal partial class MainWindowViewModel
-    {
-        #region Methods
-
+        [RelayCommand]
         private void OpenAbbyyScreenShot(object? obj)
         {
             var abbyyPath = @"D:\Abbyy\Abbyy15\ABBYY FineReader 15\ScreenshotReader.exe";
@@ -319,22 +254,42 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             }
         }
 
-        private void GetDataFromClipboard()
+        [RelayCommand]
+        private void Test()
         {
-            var clipboardText = Clipboard.GetText();
-            if (string.IsNullOrEmpty(clipboardText))
+            foreach (var item in MoneyMappingData)
             {
-                return;
+                item.SelectedNoteFsChild = item.NoteFsChildren.Last();
             }
-            InputText = clipboardText;
         }
+
+        #endregion
+
+        #region Services
+        #endregion
+
+        #region Constructors
+        public MainWindowViewModel()
+        {
+            SheetNames = [];
+            ParentNoteData = [];
+            debounceTimer = new Timer(DebounceTimerCallback, null, Timeout.Infinite, Timeout.Infinite);
+            IsAutoMapping = true;
+        }
+        #endregion
+
+    }
+
+    internal partial class MainWindowViewModel
+    {
+        #region Methods
 
         private void ClearDataWhenInputEmpty()
         {
             MoneyCells = [];
             MoneyMappingData = [];
             SuggestedFsNoteParent = null;
-            foreach(var item in ParentNoteData)
+            foreach (var item in ParentNoteData)
             {
                 item.IsSelected = false;
             }
@@ -368,12 +323,6 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         {
             if (string.IsNullOrEmpty(sheetName))
                 return;
-
-            if(_sheetData.TryGetValue(sheetName, out var data) && data.Count > 0 && data != null)
-            {
-                ParentNoteData = data;
-                return;
-            }
 
             ParentNoteData = [];
 
@@ -485,47 +434,6 @@ namespace DigitizingNoteFs.Wpf.ViewModels
 
             //GroupedData.Clear();
             //GroupedData = new(Data.Where(x => x.ParentId != 0).GroupBy(x => x.ParentId));
-        }
-        private void OpenFile()
-        {
-            try
-            {
-                var openFileDialog = new OpenFileDialog
-                {
-                    Title = "Chọn file import thuyết minh",
-                    CheckFileExists = true,
-                    CheckPathExists = true,
-                    DefaultExt = "xls",
-                    Filter = "xls files (*.xls)|*.xls",
-                    FilterIndex = 2,
-                    RestoreDirectory = true,
-                    ReadOnlyChecked = true,
-                    ShowReadOnly = true
-                };
-
-                if (openFileDialog.ShowDialog() == true)
-                {
-                    IsLoading = true;
-                    FilePath = openFileDialog.FileName;
-                    using var file = new FileStream(FilePath, FileMode.Open, FileAccess.Read);
-                    _workbook = new HSSFWorkbook(file);
-                    LoadMappingData();
-                    LoadSheetNames();
-                    file.Close();
-                }
-            }
-            catch (IOException ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-            finally
-            {
-                IsLoading = false;
-            }
         }
 
         private void LoadSheetNames()
@@ -727,13 +635,13 @@ namespace DigitizingNoteFs.Wpf.ViewModels
 
             if (suggested != null)
             {
-                var parent =  ParentNoteData.Where(x => x.FsNoteId == suggested?.FsNoteId).FirstOrDefault();
+                var parent = ParentNoteData.Where(x => x.FsNoteId == suggested?.FsNoteId).FirstOrDefault();
 
-                if(parent == null)
+                if (parent == null)
                 {
                     return;
                 }
-                
+
                 SuggestedFsNoteParent = SafeCloneTo(parent);
 
                 var count = TryIdentifyChidrenNoteWithText(ref suggestModel, suggested);
@@ -1013,8 +921,8 @@ namespace DigitizingNoteFs.Wpf.ViewModels
 
             SuggestedFsNoteParent = SafeCloneTo(note);
             // gán children ở đây thì không thay đổi dữ liệu vì ko phải obserable
-            
-             IsAutoMapping = false;
+
+            IsAutoMapping = false;
 
             foreach (var item in MoneyMappingData)
             {
