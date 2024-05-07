@@ -72,6 +72,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                 SetProperty(ref _selectedSheet, value);
                 if (_selectedSheet != null)
                 {
+                    
                     LoadDataFromSheet(_selectedSheet.Value);
                 }
                 else
@@ -165,6 +166,9 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         private HSSFWorkbook? _workbook = null;
 
         private readonly Timer debounceTimer;
+
+        private Dictionary<string, ObservableCollection<FsNoteParentViewModel>> _sheetData = new();
+
         #endregion
 
         #region Commands
@@ -172,6 +176,103 @@ namespace DigitizingNoteFs.Wpf.ViewModels
         public IRelayCommand PasteTextCommand { get; }
         public IRelayCommand OpenAbbyyScreenShotCommand { get; }
         public IRelayCommand TestCommand { get; }
+
+        [RelayCommand]
+        private void UpdateFsNoteParent()
+        {
+            try
+            {
+                if(SuggestedFsNoteParent == null)
+                {
+                    MessageBox.Show("Không hợp lệ");
+                    return;
+                }
+                var targetFsNoteParent = ParentNoteData.FirstOrDefault(x => x.FsNoteId == SuggestedFsNoteParent.FsNoteId && x.Group == SuggestedFsNoteParent.Group);
+
+                // asign value to targetFsNoteParent
+
+                if (targetFsNoteParent != null)
+                {
+
+                    foreach (var child in SuggestedFsNoteParent.Children)
+                    {
+                        var targetChild = targetFsNoteParent.Children.FirstOrDefault(x => x.FsNoteId == child.FsNoteId);
+                        if (targetChild != null)
+                        {
+                            targetChild.Value = child.Value;
+                        }
+                    }
+                    targetFsNoteParent.IsValid = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        [RelayCommand]
+        private async Task ExportExcell()
+        {
+            IsLoading = true;
+            try
+            {
+                using var stream = new FileStream(FilePath, FileMode.Open, FileAccess.Read);
+                var workbook = await Task.Run(() => new HSSFWorkbook(stream));
+
+                // current selected sheet
+                var sheetName = SelectedSheet.Key;
+
+                var sheet = workbook.GetSheet(sheetName);
+                if (sheet == null)
+                {
+                    MessageBox.Show("Không tìm thấy sheet");
+                    return;
+                }
+
+                var firstParent = ParentNoteData.FirstOrDefault();
+
+                foreach(var child in firstParent!.Children)
+                {
+                    var rowIndex = child.Cell.Item1;
+                    var colIndex = child.Cell.Item2;
+                    var row = sheet.GetRow(rowIndex);
+                    var cell = row.GetCell(colIndex);
+                    if (child.Value == 0)
+                        continue;
+                    cell.SetCellValue(child.Value);
+                }
+
+                // open dialog to save file
+                var saveFileDialog = new SaveFileDialog
+                {
+                    Filter = "Excel files (*.xls)|*.xls",
+                    FilterIndex = 2,
+                    RestoreDirectory = true,
+                    FileName = Path.GetFileName(FilePath),
+                    Title = "Chọn nơi lưu file",
+                    CheckFileExists = true,
+                    DefaultDirectory = Path.GetDirectoryName(FilePath)
+                };
+
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    using var file = new FileStream(saveFileDialog.FileName, FileMode.Create, FileAccess.Write);
+                    workbook.Write(file);
+                    file.Close();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+
+        }
         #endregion
 
         #region Services
@@ -194,6 +295,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                 }
             });
             debounceTimer = new Timer(DebounceTimerCallback, null, Timeout.Infinite, Timeout.Infinite);
+            IsAutoMapping = true;
         }
         #endregion
 
@@ -227,6 +329,17 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             InputText = clipboardText;
         }
 
+        private void ClearDataWhenInputEmpty()
+        {
+            MoneyCells = [];
+            MoneyMappingData = [];
+            SuggestedFsNoteParent = null;
+            foreach(var item in ParentNoteData)
+            {
+                item.IsSelected = false;
+            }
+        }
+
         private static bool IsValidCell(IRow row, int colName, int colNoteId)
         {
 
@@ -256,7 +369,13 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             if (string.IsNullOrEmpty(sheetName))
                 return;
 
-            ParentNoteData.Clear();
+            if(_sheetData.TryGetValue(sheetName, out var data) && data.Count > 0 && data != null)
+            {
+                ParentNoteData = data;
+                return;
+            }
+
+            ParentNoteData = [];
 
             if (_workbook == null)
             {
@@ -552,6 +671,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
             {
                 if (string.IsNullOrWhiteSpace(InputText))
                 {
+                    ClearDataWhenInputEmpty();
                     return;
                 }
                 var result = StringUtils.ConvertToMatrix(InputText);
@@ -604,7 +724,6 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                 MoneyCells = moneyList
             };
             var suggested = await GetParentNoteSuggestions(suggestModel);
-            // cân nhắc khi sử dụng
 
             if (suggested != null)
             {
@@ -614,9 +733,8 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                 {
                     return;
                 }
-
-                SuggestedFsNoteParent = parent.ShallowClone();
-                parent.Children = parent.Children.Select(x => x.ShallowClone()).ToList();
+                
+                SuggestedFsNoteParent = SafeCloneTo(parent);
 
                 var count = TryIdentifyChidrenNoteWithText(ref suggestModel, suggested);
                 var children = SuggestedFsNoteParent!.Children;
@@ -626,20 +744,6 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                 if (count > 0)
                 {
                     TryIdentifyChildrenNoteWithMoney(ref suggestModel);
-
-                    foreach (var moneyCell in suggestModel.MoneyCells!)
-                    {
-                        if (moneyCell.Note == null)
-                        {
-                            continue;
-                        }
-                        var noteId = moneyCell.Note.NoteId;
-                        var child = children?.FirstOrDefault(x => x.FsNoteId == noteId);
-                        if (child != null)
-                        {
-                            child.Value = moneyCell.Value;
-                        }
-                    }
                 }
                 // loop and set selected parent note
                 foreach (var item in ParentNoteData)
@@ -670,19 +774,7 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                     NoteId = money.Note?.NoteId ?? 0,
                     NoteFsChildren = new(ChildrentNoteSuggests.Select(x => new ComboBoxPairs(x.Key, x.Value)).ToList()),
                 };
-                vm.SelectedNoteFsChildChanged +=
-                    (object? sender, EventArgs e) =>
-                    {
-                        if(sender is MoneyMappingViewModel vm2)
-                        {
-                            int noteId = int.Parse(vm2.SelectedNoteFsChild?.Key ?? "0");
-                            var child = SuggestedFsNoteParent?.Children.Where(x => x.FsNoteId == noteId).FirstOrDefault();
-                            if (child != null)
-                            {
-                                child.Value += vm2.Value;
-                            }
-                        }
-                    };
+                vm.SelectedNoteFsChildChanged += Vm_SelectedNoteFsChildChanged;
 
                 vm.SelectedNoteFsChildChanging += Vm_SelectedNoteFsChildChanging;
                 MoneyMappingData.Add(vm);
@@ -703,10 +795,32 @@ namespace DigitizingNoteFs.Wpf.ViewModels
 
         }
 
+        private void Vm_SelectedNoteFsChildChanged(object? sender, EventArgs e)
+        {
+            if (sender is MoneyMappingViewModel vm2 && e is MoneyMappingEventArgs e2)
+            {
+                //if(e2.OldValue == null)
+                //{
+                //    return;
+                //}
+
+                int noteId = int.Parse(vm2.SelectedNoteFsChild?.Key ?? "0");
+                var child = SuggestedFsNoteParent?.Children.Where(x => x.FsNoteId == noteId).FirstOrDefault();
+                if (child != null)
+                {
+                    child.Value += vm2.Value;
+                }
+            }
+        }
+
         private void Vm_SelectedNoteFsChildChanging(object? sender, EventArgs e)
         {
-            if (sender is MoneyMappingViewModel vm)
+            if (sender is MoneyMappingViewModel vm && e is MoneyMappingEventArgs e2)
             {
+                //if (e2.OldValue == null)
+                //{
+                //    return;
+                //}
                 var noteId = int.Parse(vm.SelectedNoteFsChild?.Key ?? "0");
                 var child = SuggestedFsNoteParent?.Children.Where(x => x.FsNoteId == noteId).FirstOrDefault();
                 if (child != null)
@@ -884,6 +998,39 @@ namespace DigitizingNoteFs.Wpf.ViewModels
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Thay đổi thủ công không tự động
+        /// </summary>
+        /// <param name="note"></param>
+        public void ChangeSuggestFsNoteParent(FsNoteParentViewModel note)
+        {
+            if (note == null)
+            {
+                return;
+            }
+
+            SuggestedFsNoteParent = SafeCloneTo(note);
+            // gán children ở đây thì không thay đổi dữ liệu vì ko phải obserable
+            
+             IsAutoMapping = false;
+
+            foreach (var item in MoneyMappingData)
+            {
+                item.SelectedNoteFsChild = null;
+            }
+        }
+
+        private static FsNoteParentViewModel SafeCloneTo(FsNoteParentViewModel note)
+        {
+            // note trỏ cùng ô nhớ với note gốc trong mảng ParentNoteData
+            // clone trước khi gán để tránh thay đổi dữ liệu gốc
+            var newNote = note.ShallowClone();
+            // clone children để tránh thay đổi dữ liệu gốc vì tạo khung làm việc mới
+            // gán ở đây sẽ được cập nhật trực tiếp trên giao diện
+            newNote.Children = newNote.Children.Select(x => x.ShallowClone()).ToList();
+            return newNote;
         }
         #endregion
     }

@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using System.Collections.ObjectModel;
 
 namespace DigitizingNoteFs.Core.ViewModels
 {
@@ -13,6 +14,11 @@ namespace DigitizingNoteFs.Core.ViewModels
         [ObservableProperty]
         private double value;
 
+        partial void OnValueChanged(double oldValue, double newValue)
+        {
+            
+        }
+        
         [ObservableProperty]
         private int fsNoteId;
 
